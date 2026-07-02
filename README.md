@@ -2,6 +2,8 @@
 
 Upload your Magene C606 .fit file to view data and export to standard GPX.
 
+See <https://hswong3i.github.io/gcj02fit-to-wgs84gpx/>
+
 Created by Gemini as below:
 
     only change code required
@@ -24,7 +26,5 @@ Created by Gemini as below:
 
     display exported .gpx file with map in html
     upload to strava.com with OAuth2.0 SSO
-
-See <https://hswong3i.github.io/gcj02fit-to-wgs84gpx/>
 
 ![](index.png)
