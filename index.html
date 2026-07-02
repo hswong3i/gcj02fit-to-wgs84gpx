@@ -245,7 +245,7 @@
             // Keep the vital tracking parameters requested
             const hr = record.heart_rate;
             const cad = record.cadence;
-            const pwr = record.power;
+            const power = record.power;
             const temp = record.temperature;
             const speed = record.speed; // explicitly captured telemetry node
 
@@ -265,10 +265,10 @@
         ${record.altitude ? `<ele>${record.altitude.toFixed(1)}</ele>` : ''}
         ${record.timestamp ? `<time>${new Date(record.timestamp).toISOString()}</time>` : ''}
         <extensions>
+          ${power !== undefined ? `<power>${power}</power>` : ''}
           <gpxtpx:TrackPointExtension>
             ${hr !== undefined ? `<gpxtpx:hr>${hr}</gpxtpx:hr>` : ''}
             ${cad !== undefined ? `<gpxtpx:cad>${cad}</gpxtpx:cad>` : ''}
-            ${pwr !== undefined ? `<gpxtpx:power>${pwr}</gpxtpx:power>` : ''}
             ${temp !== undefined ? `<gpxtpx:atemp>${temp}</gpxtpx:atemp>` : ''}
             ${speed !== undefined ? `<gpxtpx:speed>${speed}</gpxtpx:speed>` : ''}
           </gpxtpx:TrackPointExtension>

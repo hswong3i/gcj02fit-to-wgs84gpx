@@ -6,6 +6,7 @@ Created by Gemini as below:
 
     only change code required
     no coding syntax cleanup and rewrite
+    fix missing power mapping
 
     create a html file with javascript
 
