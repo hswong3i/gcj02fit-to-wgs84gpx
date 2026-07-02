@@ -86,6 +86,12 @@
             </div>
             <div class="col">
                 <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+                    <div class="text-uppercase text-muted fw-semibold small mb-1">Avg / Max Heart Rate</div>
+                    <span id="statHeartRate" class="fs-5 fw-bold text-dark">-</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
                     <div class="text-uppercase text-muted fw-semibold small mb-1">Avg / Max Cadence</div>
                     <span id="statCadence" class="fs-5 fw-bold text-dark">-</span>
                 </div>
@@ -98,13 +104,7 @@
             </div>
             <div class="col">
                 <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
-                    <div class="text-uppercase text-muted fw-semibold small mb-1">Calories</div>
-                    <span id="statCalories" class="fs-5 fw-bold text-dark">-</span>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
-                    <div class="text-uppercase text-muted fw-semibold small mb-1">Temperature</div>
+                    <div class="text-uppercase text-muted fw-semibold small mb-1">Avg / Max Temperature</div>
                     <span id="statTemperature" class="fs-5 fw-bold text-dark">-</span>
                 </div>
             </div>
@@ -118,10 +118,16 @@
                 <canvas id="speedChart" height="120"></canvas>
             </div>
             <div class="mb-4">
+                <canvas id="heartRateChart" height="120"></canvas>
+            </div>
+            <div class="mb-4">
+                <canvas id="cadenceChart" height="120"></canvas>
+            </div>
+            <div class="mb-4">
                 <canvas id="powerChart" height="120"></canvas>
             </div>
             <div class="mb-2">
-                <canvas id="cadenceChart" height="120"></canvas>
+                <canvas id="temperatureChart" height="120"></canvas>
             </div>
         </div>
     </div>
@@ -140,12 +146,14 @@
     let activitySummary = {};
     let gpxContent = "";
     let speedChartInstance = null;
+    let heartRateChartInstance = null;
     let powerChartInstance = null;
     let cadenceChartInstance = null;
+    let temperatureChartInstance = null;
 
-    // Initialize the Leaflet Map centered globally
+    // Initialize the Leaflet Map centered globally on Hong Kong
     function initMap() {
-        map = L.map('map').setView([20, 0], 2);
+        map = L.map('map').setView([22.3193, 114.1694], 10);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
@@ -286,6 +294,7 @@
     <trkseg>`;
 
         let speedValues = [];
+        let heartRateValues = [];
         let cadenceValues = [];
         let powerValues = [];
         let tempValues = [];
@@ -302,6 +311,7 @@
             const speed = record.speed; // explicitly captured telemetry node
 
             if (speed !== undefined) speedValues.push(speed * 3.6); // standard internal m/s track converted to km/h for array charts
+            if (hr !== undefined) heartRateValues.push(hr);
             if (cad !== undefined) cadenceValues.push(cad);
             if (power !== undefined) powerValues.push(power);
             if (temp !== undefined) tempValues.push(temp);
@@ -355,34 +365,42 @@
         const avgSpd = activitySummary.avg_speed ? (activitySummary.avg_speed * 3.6).toFixed(1) : (speedValues.length ? (speedValues.reduce((a,b)=>a+b,0)/speedValues.length).toFixed(1) : 0);
         const maxSpd = activitySummary.max_speed ? (activitySummary.max_speed * 3.6).toFixed(1) : (speedValues.length ? Math.max(...speedValues).toFixed(1) : 0);
         
+        const avgHr = activitySummary.avg_heart_rate ? activitySummary.avg_heart_rate.toFixed(0) : (heartRateValues.length ? (heartRateValues.reduce((a,b)=>a+b,0)/heartRateValues.length).toFixed(0) : 0);
+        const maxHr = activitySummary.max_heart_rate ? activitySummary.max_heart_rate.toFixed(0) : (heartRateValues.length ? Math.max(...heartRateValues).toFixed(0) : 0);
+
         const avgCad = activitySummary.avg_cadence ? activitySummary.avg_cadence.toFixed(0) : (cadenceValues.length ? (cadenceValues.reduce((a,b)=>a+b,0)/cadenceValues.length).toFixed(0) : 0);
         const maxCad = activitySummary.max_cadence ? activitySummary.max_cadence.toFixed(0) : (cadenceValues.length ? Math.max(...cadenceValues).toFixed(0) : 0);
         
         const avgPwr = activitySummary.avg_power ? activitySummary.avg_power.toFixed(0) : (powerValues.length ? (powerValues.reduce((a,b)=>a+b,0)/powerValues.length).toFixed(0) : 0);
         const maxPwr = activitySummary.max_power ? activitySummary.max_power.toFixed(0) : (powerValues.length ? Math.max(...powerValues).toFixed(0) : 0);
         
-        const avgTmp = tempValues.length ? (tempValues.reduce((a,b)=>a+b,0)/tempValues.length).toFixed(1) + " °C" : "-";
+        const avgTmp = tempValues.length ? (tempValues.reduce((a,b)=>a+b,0)/tempValues.length).toFixed(1) : 0;
+        const maxTmp = tempValues.length ? Math.max(...tempValues).toFixed(1) : 0;
 
         document.getElementById('statDistance').innerText = totalDist;
         document.getElementById('statMovingTime').innerText = movingTimeStr;
         document.getElementById('statElevation').innerText = eleGain;
         document.getElementById('statSpeed').innerText = `${avgSpd} / ${maxSpd} km/h`;
+        document.getElementById('statHeartRate').innerText = `${avgHr} / ${maxHr} bpm`;
         document.getElementById('statCadence').innerText = `${avgCad} / ${maxCad} rpm`;
         document.getElementById('statPower').innerText = `${avgPwr} W / ${maxPwr} W`;
-        document.getElementById('statCalories').innerText = `${totalCalories} kcal`;
-        document.getElementById('statTemperature').innerText = avgTmp;
+        document.getElementById('statTemperature').innerText = tempValues.length ? `${avgTmp} / ${maxTmp} °C` : "-";
         document.getElementById('statsGrid').style.display = 'flex';
 
         // Render Telemetry Charts
         if (speedChartInstance) speedChartInstance.destroy();
+        if (heartRateChartInstance) heartRateChartInstance.destroy();
         if (powerChartInstance) powerChartInstance.destroy();
         if (cadenceChartInstance) cadenceChartInstance.destroy();
+        if (temperatureChartInstance) temperatureChartInstance.destroy();
 
-        if (speedValues.length || powerValues.length || cadenceValues.length) {
+        if (speedValues.length || heartRateValues.length || powerValues.length || cadenceValues.length || tempValues.length) {
             document.getElementById('chartsContainer').style.display = 'block';
             speedChartInstance = createTelemetryChart('speedChart', 'Speed', speedValues, '#0d6efd', 'km/h');
-            powerChartInstance = createTelemetryChart('powerChart', 'Power', powerValues, '#dc3545', 'W');
+            heartRateChartInstance = createTelemetryChart('heartRateChart', 'Heart Rate', heartRateValues, '#e83e8c', 'bpm');
             cadenceChartInstance = createTelemetryChart('cadenceChart', 'Cadence', cadenceValues, '#198754', 'rpm');
+            powerChartInstance = createTelemetryChart('powerChart', 'Power', powerValues, '#dc3545', 'W');
+            temperatureChartInstance = createTelemetryChart('temperatureChart', 'Temperature', tempValues, '#fd7e14', '°C');
         }
 
         // Clear existing map layers except base map

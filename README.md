@@ -1,10 +1,16 @@
 # FIT to GPX Converter & Map Viewer
 
-Upload your Magene C606 .fit file to view data and export to standard GPX.
+## Why?
+
+Upload your Magene C606 / C706 .fit file to view data and export to standard GPX.
+
+Since recent firmware upgrade, the GPS data now encoded with GCj02 format for Hong Kong, so it is not usable with Strava which expecting GPS data encoded with standard WGS84 format.
+
+Magene also remove the auto sync and upload .fit (with auto GCJ02 to WGS84 fixes) files to Strava.
+
+Well~ Don't Wait, Just Fix It!
 
 See <https://hswong3i.github.io/gcj02fit-to-wgs84gpx/>
-
-![](index.png)
 
 ## Running Locally
 
@@ -14,7 +20,7 @@ Running a local test copy with:
     cd gcj02fit-to-wgs84gpx
     python3 -m http.server
 
-Check with http://0.0.0.0:8000/
+Check with <http://0.0.0.0:8000/>
 
 ## Create with Gemini
 
@@ -26,29 +32,35 @@ Created by Gemini as below:
 
     create a html file with javascript
     style CSS with Bootstrap
+    default map center to Hong Kong
 
     upload .fit file from local
-
-    keep Heart Rate
-    keep Cadence
-    keep Power
-    keep Calories
-    keep Temperature
-    keep Speed
-
     convert input file from GCJ20 to WGS84
     convert and export input file from .fit to .gpx
+    upload to strava.com with OAuth2.0 SSO
+
+    keep "Speed"
+    keep "Heart Rate"
+    keep "Cadence"
+    keep "Power"
+    keep "Calories"
+    keep "Temperature"
 
     display "Total Distance", "Moving Time", "Elevation"
     display "Average Speed", "Max Speed"
+    display "Average Heart Rate", "Max Heart Rate"
     display "Average Cadence", "Max Cadence"
     display "Average Power", "Max Power"
-    display "Calories"
-    display "Temperature"
+    display "Average Temperature", "Max Temperature"
+    not display "Calories"
 
     display exported .gpx file with map in html
-    display Speed in line graph
-    display Power in line graph
-    display Cadence in line graph
+    display "Speed" in line graph
+    display "Heart Rate" in line graph
+    display "Cadence" in line graph
+    display "Power" in line graph
+    display "Temperature" in line graph
 
-    upload to strava.com with OAuth2.0 SSO
+## Demo Layout
+
+![](index.png)
