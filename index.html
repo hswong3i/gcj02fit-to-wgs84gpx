@@ -4,128 +4,132 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIT to GPX Converter & Map Viewer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-fork-ribbon-css@0.2.3/gh-fork-ribbon.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 20px;
             background-color: #f4f6f9;
-            color: #333;
-        }
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .controls {
-            margin-bottom: 20px;
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .strava-box {
-            background: #fff5ed;
-            border: 1px solid #fc4c02;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-        .strava-box h3 {
-            margin-top: 0;
-            color: #fc4c02;
-        }
-        .strava-inputs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-        }
-        .strava-inputs input {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        input[type="file"] {
-            padding: 10px;
-            border: 1px dashed #ccc;
-            border-radius: 4px;
-            background: #fafafa;
-            cursor: pointer;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        button:hover:not(:disabled) {
-            background-color: #0056b3;
-        }
-        button.btn-strava {
-            background-color: #fc4c02;
-        }
-        button.btn-strava:hover:not(:disabled) {
-            background-color: #e34402;
         }
         #map {
             width: 100%;
             height: 500px;
             border-radius: 6px;
             border: 1px solid #ddd;
-            margin-top: 15px;
         }
-        .status {
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        .success { color: #28a745; }
-        .error { color: #dc3545; }
     </style>
 </head>
 <body>
 <a class="github-fork-ribbon" href="https://github.com/hswong3i/gcj02fit-to-wgs84gpx" data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
 
-<div class="container">
-    <h2>FIT to GPX Converter (GCJ02 &rarr; WGS84)</h2>
-    <p>Upload your Magene C606 .fit file to view data and export to standard GPX.</p>
-    
-    <div class="strava-box">
-        <h3>Strava Sync Setup</h3>
-        <div class="strava-inputs">
-            <input type="text" id="stravaClientId" placeholder="Strava Client ID" />
-            <input type="password" id="stravaClientSecret" placeholder="Strava Client Secret" />
-            <button id="saveStravaCreds">Save Credentials</button>
+<div class="container my-5">
+    <div class="card shadow p-4 bg-white rounded">
+        <h2 class="mb-2 text-dark border-bottom pb-2">FIT to GPX Converter (GCJ02 &rarr; WGS84)</h2>
+        <p class="text-secondary small mb-4">Upload your Magene C606 .fit file to view data and export to standard GPX.</p>
+        
+        <div class="card p-3 mb-4 border-danger-subtle bg-light">
+            <h3 class="h5 text-danger mb-3">Strava Sync Setup</h3>
+            <div class="row g-2 mb-3">
+                <div class="col-sm-5">
+                    <input type="text" class="form-control form-control-sm" id="stravaClientId" placeholder="Strava Client ID" />
+                </div>
+                <div class="col-sm-5">
+                    <input type="password" class="form-control form-control-sm" id="stravaClientSecret" placeholder="Strava Client Secret" />
+                </div>
+                <div class="col-sm-2">
+                    <button class="btn btn-sm btn-outline-secondary w-100" id="saveStravaCreds">Save</button>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button id="stravaConnectBtn" class="btn btn-sm text-white" style="background-color: #fc4c02;">Connect with Strava</button>
+                <button id="stravaUploadBtn" class="btn btn-sm text-white" style="background-color: #fc4c02;" disabled>Upload Converted GPX to Strava</button>
+                <span id="stravaStatus" class="fw-bold px-2 py-1 bg-white border border-secondary-subtle rounded small text-muted">Not Connected</span>
+            </div>
         </div>
-        <div class="controls">
-            <button id="stravaConnectBtn" class="btn-strava">Connect with Strava</button>
-            <button id="stravaUploadBtn" class="btn-strava" disabled>Upload Converted GPX to Strava</button>
-            <span id="stravaStatus" style="font-weight: bold;">Not Connected</span>
+
+        <div class="row g-3 align-items-center mb-4">
+            <div class="col-md-6">
+                <input type="file" class="form-control" id="fitFile" accept=".fit" />
+            </div>
+            <div class="col-md-3">
+                <button id="exportBtn" class="btn btn-primary w-100 fw-bold" disabled>Export GPX</button>
+            </div>
+            <div class="col-md-3">
+                <div id="statusMessage" class="fw-bold small"></div>
+            </div>
+        </div>
+
+        <div class="row row-cols-2 row-cols-sm-4 g-3 mb-4" id="statsGrid" style="display: none;">
+            <div class="col">
+                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+                    <div class="text-uppercase text-muted fw-semibold small mb-1">Total Distance</div>
+                    <span id="statDistance" class="fs-5 fw-bold text-dark">-</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+                    <div class="text-uppercase text-muted fw-semibold small mb-1">Moving Time</div>
+                    <span id="statMovingTime" class="fs-5 fw-bold text-dark">-</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+                    <div class="text-uppercase text-muted fw-semibold small mb-1">Elevation</div>
+                    <span id="statElevation" class="fs-5 fw-bold text-dark">-</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+                    <div class="text-uppercase text-muted fw-semibold small mb-1">Avg / Max Speed</div>
+                    <span id="statSpeed" class="fs-5 fw-bold text-dark">-</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+                    <div class="text-uppercase text-muted fw-semibold small mb-1">Avg / Max Cadence</div>
+                    <span id="statCadence" class="fs-5 fw-bold text-dark">-</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+                    <div class="text-uppercase text-muted fw-semibold small mb-1">Avg / Max Power</div>
+                    <span id="statPower" class="fs-5 fw-bold text-dark">-</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+                    <div class="text-uppercase text-muted fw-semibold small mb-1">Calories</div>
+                    <span id="statCalories" class="fs-5 fw-bold text-dark">-</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+                    <div class="text-uppercase text-muted fw-semibold small mb-1">Temperature</div>
+                    <span id="statTemperature" class="fs-5 fw-bold text-dark">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="map" class="mb-4"></div>
+
+        <div class="card p-3 bg-white border border-light-subtle shadow-sm mb-4" id="chartsContainer" style="display: none;">
+            <h4 class="h5 mb-3 text-dark border-bottom pb-2">Telemetry Performance Charts</h4>
+            <div class="mb-4">
+                <canvas id="speedChart" height="120"></canvas>
+            </div>
+            <div class="mb-4">
+                <canvas id="powerChart" height="120"></canvas>
+            </div>
+            <div class="mb-2">
+                <canvas id="cadenceChart" height="120"></canvas>
+            </div>
         </div>
     </div>
-
-    <div class="controls">
-        <input type="file" id="fitFile" accept=".fit" />
-        <button id="exportBtn" disabled>Export GPX</button>
-        <div id="statusMessage" class="status"></div>
-    </div>
-
-    <div id="map"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script type="module">
     // Using a reliable CDN ESM package for fit-file-parser to avoid "not defined" errors
@@ -135,6 +139,9 @@
     let parsedRecords = [];
     let activitySummary = {};
     let gpxContent = "";
+    let speedChartInstance = null;
+    let powerChartInstance = null;
+    let cadenceChartInstance = null;
 
     // Initialize the Leaflet Map centered globally
     function initMap() {
@@ -189,7 +196,9 @@
         const file = e.target.files[0];
         if (!file) return;
 
-        showStatus("Parsing FIT file...", "");
+        showStatus("Parsing FIT file...", "text-warning");
+        document.getElementById('statsGrid').style.display = 'none';
+        document.getElementById('chartsContainer').style.display = 'none';
 
         const reader = new FileReader();
         reader.onload = async function(event) {
@@ -217,7 +226,7 @@
                 processAndRenderTrack();
                 
             } catch (err) {
-                showStatus("Error: " + err.message, "error");
+                showStatus("Error: " + err.message, "text-danger");
                 document.getElementById('exportBtn').disabled = true;
                 document.getElementById('stravaUploadBtn').disabled = true;
             }
@@ -225,6 +234,39 @@
         
         reader.readAsArrayBuffer(file);
     });
+
+    function createTelemetryChart(canvasId, label, data, color, unit) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        const labels = Array.from({length: data.length}, (_, i) => i + 1);
+        return new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: `${label} (${unit})`,
+                    data: data,
+                    borderColor: color,
+                    backgroundColor: color + '1A',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true, position: 'top' },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    x: { display: false, title: { display: false } },
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
 
     function processAndRenderTrack() {
         let latLngs = [];
@@ -243,13 +285,26 @@
     <name>Magene C606 Activity</name>
     <trkseg>`;
 
+        let speedValues = [];
+        let cadenceValues = [];
+        let powerValues = [];
+        let tempValues = [];
+
         parsedRecords.forEach(record => {
             // Keep the vital tracking parameters requested
             const hr = record.heart_rate;
             const cad = record.cadence;
-            const power = record.power;
+            
+            // FIX: Map missing power correctly from alternative native telemetry tracks or fallback properties
+            const power = record.power !== undefined ? record.power : record.accumulated_power;
+            
             const temp = record.temperature;
             const speed = record.speed; // explicitly captured telemetry node
+
+            if (speed !== undefined) speedValues.push(speed * 3.6); // standard internal m/s track converted to km/h for array charts
+            if (cad !== undefined) cadenceValues.push(cad);
+            if (power !== undefined) powerValues.push(power);
+            if (temp !== undefined) tempValues.push(temp);
 
             if (record.position_lat && record.position_long) {
                 // FIT coordinates often need to be converted to floating degrees if standard object mapping isn't active
@@ -284,6 +339,52 @@
   </trk>
 </gpx>`;
 
+        // Calculate and Render Dashboard Statistics Panels
+        const totalDist = activitySummary.total_distance ? (activitySummary.total_distance / 1000).toFixed(2) + " km" : "0.00 km";
+        
+        let movingTimeStr = "-";
+        if (activitySummary.total_moving_time) {
+            const s = Math.floor(activitySummary.total_moving_time % 60);
+            const m = Math.floor((activitySummary.total_moving_time / 60) % 60);
+            const h = Math.floor(activitySummary.total_moving_time / 3600);
+            movingTimeStr = `${h}h ${m}m ${s}s`;
+        }
+        
+        const eleGain = activitySummary.total_ascent ? activitySummary.total_ascent.toFixed(0) + " m" : "0 m";
+        
+        const avgSpd = activitySummary.avg_speed ? (activitySummary.avg_speed * 3.6).toFixed(1) : (speedValues.length ? (speedValues.reduce((a,b)=>a+b,0)/speedValues.length).toFixed(1) : 0);
+        const maxSpd = activitySummary.max_speed ? (activitySummary.max_speed * 3.6).toFixed(1) : (speedValues.length ? Math.max(...speedValues).toFixed(1) : 0);
+        
+        const avgCad = activitySummary.avg_cadence ? activitySummary.avg_cadence.toFixed(0) : (cadenceValues.length ? (cadenceValues.reduce((a,b)=>a+b,0)/cadenceValues.length).toFixed(0) : 0);
+        const maxCad = activitySummary.max_cadence ? activitySummary.max_cadence.toFixed(0) : (cadenceValues.length ? Math.max(...cadenceValues).toFixed(0) : 0);
+        
+        const avgPwr = activitySummary.avg_power ? activitySummary.avg_power.toFixed(0) : (powerValues.length ? (powerValues.reduce((a,b)=>a+b,0)/powerValues.length).toFixed(0) : 0);
+        const maxPwr = activitySummary.max_power ? activitySummary.max_power.toFixed(0) : (powerValues.length ? Math.max(...powerValues).toFixed(0) : 0);
+        
+        const avgTmp = tempValues.length ? (tempValues.reduce((a,b)=>a+b,0)/tempValues.length).toFixed(1) + " °C" : "-";
+
+        document.getElementById('statDistance').innerText = totalDist;
+        document.getElementById('statMovingTime').innerText = movingTimeStr;
+        document.getElementById('statElevation').innerText = eleGain;
+        document.getElementById('statSpeed').innerText = `${avgSpd} / ${maxSpd} km/h`;
+        document.getElementById('statCadence').innerText = `${avgCad} / ${maxCad} rpm`;
+        document.getElementById('statPower').innerText = `${avgPwr} W / ${maxPwr} W`;
+        document.getElementById('statCalories').innerText = `${totalCalories} kcal`;
+        document.getElementById('statTemperature').innerText = avgTmp;
+        document.getElementById('statsGrid').style.display = 'flex';
+
+        // Render Telemetry Charts
+        if (speedChartInstance) speedChartInstance.destroy();
+        if (powerChartInstance) powerChartInstance.destroy();
+        if (cadenceChartInstance) cadenceChartInstance.destroy();
+
+        if (speedValues.length || powerValues.length || cadenceValues.length) {
+            document.getElementById('chartsContainer').style.display = 'block';
+            speedChartInstance = createTelemetryChart('speedChart', 'Speed', speedValues, '#0d6efd', 'km/h');
+            powerChartInstance = createTelemetryChart('powerChart', 'Power', powerValues, '#dc3545', 'W');
+            cadenceChartInstance = createTelemetryChart('cadenceChart', 'Cadence', cadenceValues, '#198754', 'rpm');
+        }
+
         // Clear existing map layers except base map
         map.eachLayer(layer => {
             if (layer instanceof L.Polyline || layer instanceof L.Marker) {
@@ -299,13 +400,13 @@
             L.marker(latLngs[0]).addTo(map).bindPopup("Start Point");
             L.marker(latLngs[latLngs.length - 1]).addTo(map).bindPopup("End Point");
 
-            showStatus(`Successfully loaded ${parsedRecords.length} records! Total Calories: ${totalCalories} kcal.`, "success");
+            showStatus(`Successfully loaded ${parsedRecords.length} records!`, "text-success");
             document.getElementById('exportBtn').disabled = false;
             if (localStorage.getItem('strava_access_token')) {
                 document.getElementById('stravaUploadBtn').disabled = false;
             }
         } else {
-            showStatus("Parsed track data successfully, but found no valid GPS map coordinates.", "success");
+            showStatus("Parsed track data successfully, but found no valid GPS map coordinates.", "text-success");
             document.getElementById('exportBtn').disabled = true;
             document.getElementById('stravaUploadBtn').disabled = true;
         }
@@ -327,7 +428,7 @@
     function showStatus(msg, type) {
         const el = document.getElementById('statusMessage');
         el.innerText = msg;
-        el.className = "status " + type;
+        el.className = "fw-bold small " + type;
     }
 
     // Strava Integration Setup
