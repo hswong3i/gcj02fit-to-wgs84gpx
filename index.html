@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIT to GPX Converter & Map Viewer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f6f9;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        input[type="file"] {
+            padding: 10px;
+            border: 1px dashed #ccc;
+            border-radius: 4px;
+            background: #fafafa;
+            cursor: pointer;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+        #map {
+            width: 100%;
+            height: 500px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            margin-top: 15px;
+        }
+        .status {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>FIT to GPX Converter (GCJ02 &rarr; WGS84)</h2>
+    <p>Upload your Magene C606 .fit file to view data and export to standard GPX.</p>
+    
+    <div class="controls">
+        <input type="file" id="fitFile" accept=".fit" />
+        <button id="exportBtn" disabled>Export GPX</button>
+        <div id="statusMessage" class="status"></div>
+    </div>
+
+    <div id="map"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script type="module">
+    // Using a reliable CDN ESM package for fit-file-parser to avoid "not defined" errors
+    import FitParser from 'https://cdn.jsdelivr.net/npm/fit-file-parser@3.0.0/+esm';
+
+    let map;
+    let parsedRecords = [];
+    let activitySummary = {};
+    let gpxContent = "";
+
+    // Initialize the Leaflet Map centered globally
+    function initMap() {
+        map = L.map('map').setView([20, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+    }
+    initMap();
+
+    // GCJ-02 to WGS-84 Deviation Correction Algorithm
+    const EE = 0.00669342162296594323;
+    const AA = 6378245.0;
+
+    function outOfChina(lng, lat) {
+        return (lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271);
+    }
+
+    function transformLat(lng, lat) {
+        let ret = -100.0 + 2.0 * lng + 3.0 * lat + 0.2 * lat * lat + 0.1 * lng * lat + 0.2 * Math.sqrt(Math.abs(lng));
+        ret += (20.0 * Math.sin(6.0 * lng * Math.PI) + 20.0 * Math.sin(2.0 * lng * Math.PI)) * 2.0 / 3.0;
+        ret += (20.0 * Math.sin(lat * Math.PI) + 40.0 * Math.sin(lat / 3.0 * Math.PI)) * 2.0 / 3.0;
+        ret += (160.0 * Math.sin(lat / 12.0 * Math.PI) + 320 * Math.sin(lat * Math.PI / 30.0)) * 2.0 / 3.0;
+        return ret;
+    }
+
+    function transformLng(lng, lat) {
+        let ret = 300.0 + lng + 2.0 * lat + 0.1 * lng * lng + 0.1 * lng * lat + 0.1 * Math.sqrt(Math.abs(lng));
+        ret += (20.0 * Math.sin(6.0 * lng * Math.PI) + 20.0 * Math.sin(2.0 * lng * Math.PI)) * 2.0 / 3.0;
+        ret += (20.0 * Math.sin(lng * Math.PI) + 40.0 * Math.sin(lng / 3.0 * Math.PI)) * 2.0 / 3.0;
+        ret += (150.0 * Math.sin(lng / 12.0 * Math.PI) + 300.0 * Math.sin(lng / 30.0 * Math.PI)) * 2.0 / 3.0;
+        return ret;
+    }
+
+    function gcj02ToWgs84(lng, lat) {
+        if (outOfChina(lng, lat)) return [lng, lat];
+        let dlat = transformLat(lng - 105.0, lat - 35.0);
+        let dlng = transformLng(lng - 105.0, lat - 35.0);
+        let radlat = lat / 180.0 * Math.PI;
+        let magic = Math.sin(radlat);
+        magic = 1 - EE * magic * magic;
+        let sqrtmagic = Math.sqrt(magic);
+        dlat = (dlat * 180.0) / ((AA * (1 - EE)) / (magic * sqrtmagic) * Math.PI);
+        dlng = (dlng * 180.0) / (AA / sqrtmagic * Math.cos(radlat) * Math.PI);
+        let mglat = lat + dlat;
+        let mglng = lng + dlng;
+        return [lng * 2 - mglng, lat * 2 - mglat];
+    }
+
+    // Handle file uploads
+    document.getElementById('fitFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        showStatus("Parsing FIT file...", "");
+
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+            try {
+                const arrayBuffer = event.target.result;
+                
+                // Initialize parser configuration
+                const fitParser = new FitParser({
+                    force: true,
+                    targetUnit: 'metric',
+                    temperatureUnit: 'celsius'
+                });
+
+                // Parse the ArrayBuffer asynchronously
+                const data = await fitParser.parseAsync(arrayBuffer);
+                
+                if (!data.records || data.records.length === 0) {
+                    throw new Error("No data track records found in this file.");
+                }
+
+                parsedRecords = data.records;
+                activitySummary = data.sessions ? data.sessions[0] : {};
+                
+                // Process GPS track points and extract metrics
+                processAndRenderTrack();
+                
+            } catch (err) {
+                showStatus("Error: " + err.message, "error");
+                document.getElementById('exportBtn').disabled = true;
+            }
+        };
+        
+        reader.readAsArrayBuffer(file);
+    });
+
+    function processAndRenderTrack() {
+        let latLngs = [];
+        
+        // Setup base GPX headers
+        const startTime = parsedRecords[0].timestamp ? new Date(parsedRecords[0].timestamp).toISOString() : new Date().toISOString();
+        const totalCalories = activitySummary.total_calories || 0;
+
+        gpxContent = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="FitToGpxWeb" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">
+  <metadata>
+    <time>${startTime}</time>
+    <desc>Calories: ${totalCalories} kcal</desc>
+  </metadata>
+  <trk>
+    <name>Magene C606 Activity</name>
+    <trkseg>`;
+
+        parsedRecords.forEach(record => {
+            // Keep the vital tracking parameters requested
+            const hr = record.heart_rate;
+            const cad = record.cadence;
+            const pwr = record.power;
+            const temp = record.temperature;
+
+            if (record.position_lat && record.position_long) {
+                // FIT coordinates often need to be converted to floating degrees if standard object mapping isn't active
+                let lat = record.position_lat;
+                let lng = record.position_long;
+                
+                // Correct GCJ02 to WGS84 for domestic device logs
+                const [correctedLng, correctedLat] = gcj02ToWgs84(lng, lat);
+                
+                latLngs.push([correctedLat, correctedLng]);
+
+                // Append node data into GPX format tracking point elements
+                gpxContent += `
+      <trkpt lat="${correctedLat.toFixed(6)}" lon="${correctedLng.toFixed(6)}">
+        ${record.altitude ? `<ele>${record.altitude.toFixed(1)}</ele>` : ''}
+        ${record.timestamp ? `<time>${new Date(record.timestamp).toISOString()}</time>` : ''}
+        <extensions>
+          <gpxtpx:TrackPointExtension>
+            ${hr !== undefined ? `<gpxtpx:hr>${hr}</gpxtpx:hr>` : ''}
+            ${cad !== undefined ? `<gpxtpx:cad>${cad}</gpxtpx:cad>` : ''}
+            ${pwr !== undefined ? `<gpxtpx:power>${pwr}</gpxtpx:power>` : ''}
+            ${temp !== undefined ? `<gpxtpx:atemp>${temp}</gpxtpx:atemp>` : ''}
+          </gpxtpx:TrackPointExtension>
+        </extensions>
+      </trkpt>`;
+            }
+        });
+
+        gpxContent += `
+    </trkseg>
+  </trk>
+</gpx>`;
+
+        // Clear existing map layers except base map
+        map.eachLayer(layer => {
+            if (layer instanceof L.Polyline || layer instanceof L.Marker) {
+                map.removeLayer(layer);
+            }
+        });
+
+        if (latLngs.length > 0) {
+            // Display track path visually over the map object 
+            const polyline = L.polyline(latLngs, {color: '#0056b3', weight: 4}).addTo(map);
+            map.fitBounds(polyline.getBounds());
+            
+            L.marker(latLngs[0]).addTo(map).bindPopup("Start Point");
+            L.marker(latLngs[latLngs.length - 1]).addTo(map).bindPopup("End Point");
+
+            showStatus(`Successfully loaded ${parsedRecords.length} records! Total Calories: ${totalCalories} kcal.`, "success");
+            document.getElementById('exportBtn').disabled = false;
+        } else {
+            showStatus("Parsed track data successfully, but found no valid GPS map coordinates.", "success");
+            document.getElementById('exportBtn').disabled = true;
+        }
+    }
+
+    // Export Handler via Browser Blob Download Routine
+    document.getElementById('exportBtn').addEventListener('click', function() {
+        if (!gpxContent) return;
+        const blob = new Blob([gpxContent], { type: 'application/gpx+xml;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "converted_activity.gpx");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+    function showStatus(msg, type) {
+        const el = document.getElementById('statusMessage');
+        el.innerText = msg;
+        el.className = "status " + type;
+    }
+</script>
+
+</body>
+</html>
