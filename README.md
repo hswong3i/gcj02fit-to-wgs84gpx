@@ -1,16 +1,16 @@
 # FIT to GPX Converter & Map Viewer
 
-## Why?
-
 Upload your Magene C606 / C706 .fit file to view data and export to standard GPX.
+
+See <https://hswong3i.github.io/gcj02fit-to-wgs84gpx/>
+
+## Why?
 
 Since recent firmware upgrade, the GPS data now encoded with GCj02 format for Hong Kong, so it is not usable with Strava which expecting GPS data encoded with standard WGS84 format.
 
 Magene also remove the auto sync and upload .fit (with auto GCJ02 to WGS84 fixes) files to Strava.
 
 Well~ Don't Wait, Just Fix It!
-
-See <https://hswong3i.github.io/gcj02fit-to-wgs84gpx/>
 
 ## Running Locally
 
@@ -64,3 +64,14 @@ Created by Gemini as below:
 ## Demo Layout
 
 ![](index.png)
+
+## License
+
+- Code released under [Apache License 2.0](LICENSE)
+- Docs released under [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/)
+
+## Author Information
+
+- Wong Hoi Sing Edison
+  - <https://twitter.com/hswong3i>
+  - <https://github.com/hswong3i>
