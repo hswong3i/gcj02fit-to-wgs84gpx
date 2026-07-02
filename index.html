@@ -204,6 +204,7 @@
             const cad = record.cadence;
             const pwr = record.power;
             const temp = record.temperature;
+            const speed = record.speed; // explicitly captured telemetry node
 
             if (record.position_lat && record.position_long) {
                 // FIT coordinates often need to be converted to floating degrees if standard object mapping isn't active
@@ -226,6 +227,7 @@
             ${cad !== undefined ? `<gpxtpx:cad>${cad}</gpxtpx:cad>` : ''}
             ${pwr !== undefined ? `<gpxtpx:power>${pwr}</gpxtpx:power>` : ''}
             ${temp !== undefined ? `<gpxtpx:atemp>${temp}</gpxtpx:atemp>` : ''}
+            ${speed !== undefined ? `<gpxtpx:speed>${speed}</gpxtpx:speed>` : ''}
           </gpxtpx:TrackPointExtension>
         </extensions>
       </trkpt>`;
