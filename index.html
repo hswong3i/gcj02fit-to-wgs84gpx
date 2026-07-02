@@ -27,6 +27,28 @@
             align-items: center;
             flex-wrap: wrap;
         }
+        .strava-box {
+            background: #fff5ed;
+            border: 1px solid #fc4c02;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .strava-box h3 {
+            margin-top: 0;
+            color: #fc4c02;
+        }
+        .strava-inputs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .strava-inputs input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
         input[type="file"] {
             padding: 10px;
             border: 1px dashed #ccc;
@@ -51,6 +73,12 @@
         button:hover:not(:disabled) {
             background-color: #0056b3;
         }
+        button.btn-strava {
+            background-color: #fc4c02;
+        }
+        button.btn-strava:hover:not(:disabled) {
+            background-color: #e34402;
+        }
         #map {
             width: 100%;
             height: 500px;
@@ -72,6 +100,20 @@
     <h2>FIT to GPX Converter (GCJ02 &rarr; WGS84)</h2>
     <p>Upload your Magene C606 .fit file to view data and export to standard GPX.</p>
     
+    <div class="strava-box">
+        <h3>Strava Sync Setup</h3>
+        <div class="strava-inputs">
+            <input type="text" id="stravaClientId" placeholder="Strava Client ID" />
+            <input type="password" id="stravaClientSecret" placeholder="Strava Client Secret" />
+            <button id="saveStravaCreds">Save Credentials</button>
+        </div>
+        <div class="controls">
+            <button id="stravaConnectBtn" class="btn-strava">Connect with Strava</button>
+            <button id="stravaUploadBtn" class="btn-strava" disabled>Upload Converted GPX to Strava</button>
+            <span id="stravaStatus" style="font-weight: bold;">Not Connected</span>
+        </div>
+    </div>
+
     <div class="controls">
         <input type="file" id="fitFile" accept=".fit" />
         <button id="exportBtn" disabled>Export GPX</button>
@@ -175,6 +217,7 @@
             } catch (err) {
                 showStatus("Error: " + err.message, "error");
                 document.getElementById('exportBtn').disabled = true;
+                document.getElementById('stravaUploadBtn').disabled = true;
             }
         };
         
@@ -256,9 +299,13 @@
 
             showStatus(`Successfully loaded ${parsedRecords.length} records! Total Calories: ${totalCalories} kcal.`, "success");
             document.getElementById('exportBtn').disabled = false;
+            if (localStorage.getItem('strava_access_token')) {
+                document.getElementById('stravaUploadBtn').disabled = false;
+            }
         } else {
             showStatus("Parsed track data successfully, but found no valid GPS map coordinates.", "success");
             document.getElementById('exportBtn').disabled = true;
+            document.getElementById('stravaUploadBtn').disabled = true;
         }
     }
 
@@ -280,6 +327,92 @@
         el.innerText = msg;
         el.className = "status " + type;
     }
+
+    // Strava Integration Setup
+    const redirectUri = window.location.origin + window.location.pathname;
+
+    document.getElementById('stravaClientId').value = localStorage.getItem('strava_client_id') || '';
+    document.getElementById('stravaClientSecret').value = localStorage.getItem('strava_client_secret') || '';
+
+    document.getElementById('saveStravaCreds').addEventListener('click', () => {
+        localStorage.setItem('strava_client_id', document.getElementById('stravaClientId').value.trim());
+        localStorage.setItem('strava_client_secret', document.getElementById('stravaClientSecret').value.trim());
+        alert('Credentials Saved!');
+    });
+
+    document.getElementById('stravaConnectBtn').addEventListener('click', () => {
+        const clientId = localStorage.getItem('strava_client_id');
+        if (!clientId) return alert('Please save your Strava Client ID first.');
+        window.location.href = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=activity:write`;
+    });
+
+    async function checkOauthCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        
+        if (code) {
+            const clientId = localStorage.getItem('strava_client_id');
+            const clientSecret = localStorage.getItem('strava_client_secret');
+            document.getElementById('stravaStatus').innerText = "Exchanging token...";
+
+            try {
+                const response = await fetch('https://www.strava.com/oauth/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        client_id: clientId,
+                        client_secret: clientSecret,
+                        code: code,
+                        grant_type: 'authorization_code'
+                    })
+                });
+                const authData = await response.json();
+                if (authData.access_token) {
+                    localStorage.setItem('strava_access_token', authData.access_token);
+                    document.getElementById('stravaStatus').innerText = `Connected as ${authData.athlete.firstname}`;
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } else {
+                    document.getElementById('stravaStatus').innerText = "Authentication failed.";
+                }
+            } catch (err) {
+                document.getElementById('stravaStatus').innerText = "Error: " + err.message;
+            }
+        } else if (localStorage.getItem('strava_access_token')) {
+            document.getElementById('stravaStatus').innerText = "Connected to Strava";
+        }
+    }
+    checkOauthCallback();
+
+    document.getElementById('stravaUploadBtn').addEventListener('click', async () => {
+        const token = localStorage.getItem('strava_access_token');
+        if (!token || !gpxContent) return;
+
+        document.getElementById('stravaStatus').innerText = "Uploading to Strava...";
+        document.getElementById('stravaUploadBtn').disabled = true;
+
+        const blob = new Blob([gpxContent], { type: 'application/gpx+xml' });
+        const formData = new FormData();
+        formData.append('file', blob, 'activity.gpx');
+        formData.append('data_type', 'gpx');
+
+        try {
+            const response = await fetch('https://www.strava.com/api/v3/uploads', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            const result = await response.json();
+            if (response.ok || result.id) {
+                document.getElementById('stravaStatus').innerText = "Uploaded Successfully!";
+            } else {
+                document.getElementById('stravaStatus').innerText = "Upload failed: " + (result.message || "Error");
+                document.getElementById('stravaUploadBtn').disabled = false;
+            }
+        } catch (err) {
+            document.getElementById('stravaStatus').innerText = "Upload error: " + err.message;
+            document.getElementById('stravaUploadBtn').disabled = false;
+        }
+    });
 </script>
 
 </body>
