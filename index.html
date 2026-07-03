@@ -4,22 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIT to GPX Converter & Map Viewer</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-fork-ribbon-css@0.2.3/gh-fork-ribbon.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body {
-            background-color: #f4f6f9;
+            background-color: #F4F6F9;
         }
         #map {
             width: 100%;
             height: 500px;
             border-radius: 6px;
-            border: 1px solid #ddd;
+            border: 1px solid #DDDDDD;
+        }
+        .btn-strava {
+            background-color: #FC4C02;
+            color: #FFFFFF;
+        }
+        .btn-strava:hover, .btn-strava:focus {
+            background-color: #E04000;
+            color: #FFFFFF;
         }
     </style>
 </head>
 <body>
+
 <a class="github-fork-ribbon" href="https://github.com/hswong3i/gcj02fit-to-wgs84gpx" data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
 
 <div class="container my-5">
@@ -41,8 +50,8 @@
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <button id="stravaConnectBtn" class="btn btn-sm text-white" style="background-color: #fc4c02;">Connect with Strava</button>
-                <button id="stravaUploadBtn" class="btn btn-sm text-white" style="background-color: #fc4c02;" disabled>Upload Converted GPX to Strava</button>
+                <button id="stravaConnectBtn" class="btn btn-sm btn-strava">Connect with Strava</button>
+                <button id="stravaUploadBtn" class="btn btn-sm btn-strava" disabled>Upload Converted GPX to Strava</button>
                 <span id="stravaStatus" class="fw-bold px-2 py-1 bg-white border border-secondary-subtle rounded small text-muted">Not Connected</span>
             </div>
         </div>
@@ -52,14 +61,14 @@
                 <h6 class="fw-bold text-secondary mb-2">Input Settings</h6>
                 <div class="row g-2">
                     <div class="col-6">
-                        <label class="small fw-semibold text-muted">Format</label>
+                        <label class="small fw-semibold text-muted" for="inputFormat">Format</label>
                         <select id="inputFormat" class="form-select form-select-sm">
                             <option value="FIT" selected>.FIT</option>
                             <option value="GPX">.GPX</option>
                         </select>
                     </div>
                     <div class="col-6">
-                        <label class="small fw-semibold text-muted">Encoding</label>
+                        <label class="small fw-semibold text-muted" for="inputEncoding">Encoding</label>
                         <select id="inputEncoding" class="form-select form-select-sm">
                             <option value="GCJ02" selected>GCJ02</option>
                             <option value="BD09">BD09</option>
@@ -72,14 +81,14 @@
                 <h6 class="fw-bold text-secondary mb-2">Output Settings</h6>
                 <div class="row g-2">
                     <div class="col-6">
-                        <label class="small fw-semibold text-muted">Format</label>
+                        <label class="small fw-semibold text-muted" for="outputFormat">Format</label>
                         <select id="outputFormat" class="form-select form-select-sm">
                             <option value="FIT">.FIT</option>
                             <option value="GPX" selected>.GPX</option>
                         </select>
                     </div>
                     <div class="col-6">
-                        <label class="small fw-semibold text-muted">Encoding</label>
+                        <label class="small fw-semibold text-muted" for="outputEncoding">Encoding</label>
                         <select id="outputEncoding" class="form-select form-select-sm">
                             <option value="GCJ02">GCJ02</option>
                             <option value="BD09">BD09</option>
@@ -105,11 +114,11 @@
             </div>
         </div>
 
-        <div class="mb-3 text-secondary fw-bold" id="activityDateContainer" style="display: none;">
+        <div class="mb-3 text-secondary fw-bold d-none" id="activityDateContainer">
             Activity Date: <span id="activityDateSpan" class="text-dark">-</span>
         </div>
 
-        <div class="row row-cols-2 row-cols-sm-4 g-3 mb-4" id="statsGrid" style="display: none;">
+        <div class="row row-cols-2 row-cols-sm-4 g-3 mb-4 d-none" id="statsGrid">
             <div class="col">
                 <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
                     <div class="text-uppercase text-muted fw-semibold small mb-1">Total Distance</div>
@@ -162,23 +171,13 @@
 
         <div id="map" class="mb-4"></div>
 
-        <div class="card p-3 bg-white border border-light-subtle shadow-sm mb-4" id="chartsContainer" style="display: none;">
+        <div class="card p-3 bg-white border border-light-subtle shadow-sm mb-4 d-none" id="chartsContainer">
             <h4 class="h5 mb-3 text-dark border-bottom pb-2">Telemetry Performance Charts</h4>
-            <div class="mb-4">
-                <canvas id="speedChart" height="120"></canvas>
-            </div>
-            <div class="mb-4">
-                <canvas id="heartRateChart" height="120"></canvas>
-            </div>
-            <div class="mb-4">
-                <canvas id="cadenceChart" height="120"></canvas>
-            </div>
-            <div class="mb-4">
-                <canvas id="powerChart" height="120"></canvas>
-            </div>
-            <div class="mb-2">
-                <canvas id="temperatureChart" height="120"></canvas>
-            </div>
+            <div class="mb-4"><canvas id="speedChart" height="120"></canvas></div>
+            <div class="mb-4"><canvas id="heartRateChart" height="120"></canvas></div>
+            <div class="mb-4"><canvas id="cadenceChart" height="120"></canvas></div>
+            <div class="mb-4"><canvas id="powerChart" height="120"></canvas></div>
+            <div class="mb-2"><canvas id="temperatureChart" height="120"></canvas></div>
         </div>
     </div>
 </div>
@@ -188,236 +187,173 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script type="module">
-    // Using a reliable CDN ESM package for fit-file-parser to avoid "not defined" errors
     import FitParser from 'https://cdn.jsdelivr.net/npm/fit-file-parser@3.0.0/+esm';
 
+    // --- Dynamic Internal Cache Elements Mapping ---
+    const dom = {
+        fitFile: document.getElementById('fitFile'),
+        refreshBtn: document.getElementById('refreshBtn'),
+        exportBtn: document.getElementById('exportBtn'),
+        inputFormat: document.getElementById('inputFormat'),
+        inputEncoding: document.getElementById('inputEncoding'),
+        outputFormat: document.getElementById('outputFormat'),
+        outputEncoding: document.getElementById('outputEncoding'),
+        statusMessage: document.getElementById('statusMessage'),
+        activityDateContainer: document.getElementById('activityDateContainer'),
+        activityDateSpan: document.getElementById('activityDateSpan'),
+        statsGrid: document.getElementById('statsGrid'),
+        chartsContainer: document.getElementById('chartsContainer'),
+        statDistance: document.getElementById('statDistance'),
+        statMovingTime: document.getElementById('statMovingTime'),
+        statElevation: document.getElementById('statElevation'),
+        statSpeed: document.getElementById('statSpeed'),
+        statHeartRate: document.getElementById('statHeartRate'),
+        statCadence: document.getElementById('statCadence'),
+        statPower: document.getElementById('statPower'),
+        statTemperature: document.getElementById('statTemperature'),
+        stravaClientId: document.getElementById('stravaClientId'),
+        stravaClientSecret: document.getElementById('stravaClientSecret'),
+        saveStravaCreds: document.getElementById('saveStravaCreds'),
+        stravaConnectBtn: document.getElementById('stravaConnectBtn'),
+        stravaUploadBtn: document.getElementById('stravaUploadBtn'),
+        stravaStatus: document.getElementById('stravaStatus')
+    };
+
+    // --- State Vectors Vector Block ---
     let map;
     let parsedRecords = [];
     let activitySummary = {};
-    let gpxContent = "";
+    let gpxContent = '';
     let currentRawBuffer = null;
     let currentRawText = null;
-    let speedChartInstance = null;
-    let heartRateChartInstance = null;
-    let powerChartInstance = null;
-    let cadenceChartInstance = null;
-    let temperatureChartInstance = null;
 
-    // Initialize the Leaflet Map centered globally on Hong Kong
-    function initMap() {
+    const chartInstances = {
+        speed: null,
+        heartRate: null,
+        power: null,
+        cadence: null,
+        temperature: null
+    };
+
+    // --- Initialize the Leaflet Map centered on Hong Kong ---
+    const initMap = () => {
         map = L.map('map').setView([22.3193, 114.1694], 10);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
-    }
+    };
     initMap();
 
-    // GCJ-02 / BD09 / WGS84 Deviation Correction Algorithm
+    // --- GCJ-02 / BD09 / WGS84 Deviation Correction Matrices ---
     const EE = 0.00669342162296594323;
     const AA = 6378245.0;
     const X_PI = 3.14159265358979324 * 3000.0 / 180.0;
 
-    function outOfChina(lng, lat) {
-        return (lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271);
-    }
+    const outOfChina = (lng, lat) => (lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271);
 
-    function transformLat(lng, lat) {
+    const transformLat = (lng, lat) => {
         let ret = -100.0 + 2.0 * lng + 3.0 * lat + 0.2 * lat * lat + 0.1 * lng * lat + 0.2 * Math.sqrt(Math.abs(lng));
         ret += (20.0 * Math.sin(6.0 * lng * Math.PI) + 20.0 * Math.sin(2.0 * lng * Math.PI)) * 2.0 / 3.0;
         ret += (20.0 * Math.sin(lat * Math.PI) + 40.0 * Math.sin(lat / 3.0 * Math.PI)) * 2.0 / 3.0;
         ret += (160.0 * Math.sin(lat / 12.0 * Math.PI) + 320 * Math.sin(lat * Math.PI / 30.0)) * 2.0 / 3.0;
         return ret;
-    }
+    };
 
-    function transformLng(lng, lat) {
+    const transformLng = (lng, lat) => {
         let ret = 300.0 + lng + 2.0 * lat + 0.1 * lng * lng + 0.1 * lng * lat + 0.1 * Math.sqrt(Math.abs(lng));
         ret += (20.0 * Math.sin(6.0 * lng * Math.PI) + 20.0 * Math.sin(2.0 * lng * Math.PI)) * 2.0 / 3.0;
         ret += (20.0 * Math.sin(lng * Math.PI) + 40.0 * Math.sin(lng / 3.0 * Math.PI)) * 2.0 / 3.0;
         ret += (150.0 * Math.sin(lng / 12.0 * Math.PI) + 300.0 * Math.sin(lng / 30.0 * Math.PI)) * 2.0 / 3.0;
         return ret;
-    }
+    };
 
-    function gcj02ToWgs84(lng, lat) {
-        if (outOfChina(lng, lat)) return [lng, lat];
+    const gcj02ToWgs84 = (lng, lat) => {
+        if (outOfChina(lng, lat)) {
+            return [lng, lat];
+        }
         let dlat = transformLat(lng - 105.0, lat - 35.0);
         let dlng = transformLng(lng - 105.0, lat - 35.0);
-        let radlat = lat / 180.0 * Math.PI;
+        const radlat = lat / 180.0 * Math.PI;
         let magic = Math.sin(radlat);
         magic = 1 - EE * magic * magic;
-        let sqrtmagic = Math.sqrt(magic);
+        const sqrtmagic = Math.sqrt(magic);
         dlat = (dlat * 180.0) / ((AA * (1 - EE)) / (magic * sqrtmagic) * Math.PI);
         dlng = (dlng * 180.0) / (AA / sqrtmagic * Math.cos(radlat) * Math.PI);
-        let mglat = lat + dlat;
-        let mglng = lng + dlng;
-        return [lng * 2 - mglng, lat * 2 - mglat];
-    }
+        return [lng * 2 - (lng + dlng), lat * 2 - (lat + dlat)];
+    };
 
-    function bd09ToGcj02(bd_lon, bd_lat) {
-        let x = bd_lon - 0.0065;
-        let y = bd_lat - 0.006;
-        let z = Math.sqrt(x * x + y * y) - 0.00002 * Math.sin(y * X_PI);
-        let theta = Math.atan2(y, x) - 0.00003 * Math.cos(x * X_PI);
+    const bd09ToGcj02 = (bd_lon, bd_lat) => {
+        const x = bd_lon - 0.0065;
+        const y = bd_lat - 0.006;
+        const z = Math.sqrt(x * x + y * y) - 0.00002 * Math.sin(y * X_PI);
+        const theta = Math.atan2(y, x) - 0.00003 * Math.cos(x * X_PI);
         return [z * Math.cos(theta), z * Math.sin(theta)];
-    }
+    };
 
-    function bd09ToWgs84(bd_lon, bd_lat) {
-        let gcj = bd09ToGcj02(bd_lon, bd_lat);
+    const bd09ToWgs84 = (bd_lon, bd_lat) => {
+        const gcj = bd09ToGcj02(bd_lon, bd_lat);
         return gcj02ToWgs84(gcj[0], gcj[1]);
-    }
+    };
 
-    function wgs84ToGcj02(lng, lat) {
-        if (outOfChina(lng, lat)) return [lng, lat];
+    const wgs84ToGcj02 = (lng, lat) => {
+        if (outOfChina(lng, lat)) {
+            return [lng, lat];
+        }
         let dlat = transformLat(lng - 105.0, lat - 35.0);
         let dlng = transformLng(lng - 105.0, lat - 35.0);
-        let radlat = lat / 180.0 * Math.PI;
+        const radlat = lat / 180.0 * Math.PI;
         let magic = Math.sin(radlat);
         magic = 1 - EE * magic * magic;
-        let sqrtmagic = Math.sqrt(magic);
+        const sqrtmagic = Math.sqrt(magic);
         dlat = (dlat * 180.0) / ((AA * (1 - EE)) / (magic * sqrtmagic) * Math.PI);
         dlng = (dlng * 180.0) / (AA / sqrtmagic * Math.cos(radlat) * Math.PI);
         return [lng + dlng, lat + dlat];
-    }
+    };
 
-    function gcj02ToBd09(lng, lat) {
-        let z = Math.sqrt(lng * lng + lat * lat) + 0.00002 * Math.sin(lat * X_PI);
-        let theta = Math.atan2(lat, lng) + 0.00003 * Math.cos(lng * X_PI);
+    const gcj02ToBd09 = (lng, lat) => {
+        const z = Math.sqrt(lng * lng + lat * lat) + 0.00002 * Math.sin(lat * X_PI);
+        const theta = Math.atan2(lat, lng) + 0.00003 * Math.cos(lng * X_PI);
         return [z * Math.cos(theta) + 0.0065, z * Math.sin(theta) + 0.006];
-    }
+    };
 
-    function wgs84ToBd09(lng, lat) {
-        let gcj = wgs84ToGcj02(lng, lat);
+    const wgs84ToBd09 = (lng, lat) => {
+        const gcj = wgs84ToGcj02(lng, lat);
         return gcj02ToBd09(gcj[0], gcj[1]);
-    }
+    };
 
-    function toWgs84(lng, lat, fromEncoding) {
-        if (fromEncoding === 'GCJ02') return gcj02ToWgs84(lng, lat);
-        if (fromEncoding === 'BD09') return bd09ToWgs84(lng, lat);
+    const toWgs84 = (lng, lat, fromEncoding) => {
+        if (fromEncoding === 'GCJ02') {
+            return gcj02ToWgs84(lng, lat);
+        }
+        if (fromEncoding === 'BD09') {
+            return bd09ToWgs84(lng, lat);
+        }
         return [lng, lat];
-    }
+    };
 
-    function fromWgs84(lng, lat, toEncoding) {
-        if (toEncoding === 'GCJ02') return wgs84ToGcj02(lng, lat);
-        if (toEncoding === 'BD09') return wgs84ToBd09(lng, lat);
+    const fromWgs84 = (lng, lat, toEncoding) => {
+        if (toEncoding === 'GCJ02') {
+            return wgs84ToGcj02(lng, lat);
+        }
+        if (toEncoding === 'BD09') {
+            return wgs84ToBd09(lng, lat);
+        }
         return [lng, lat];
-    }
+    };
 
-    // Handle file uploads
-    document.getElementById('fitFile').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+    // --- Communication Status Box Logger ---
+    const showStatus = (msg, type) => {
+        dom.statusMessage.innerText = msg;
+        dom.statusMessage.className = `fw-bold small ${type}`;
+    };
 
-        const ext = file.name.split('.').pop().toUpperCase();
-        if (ext === 'FIT' || ext === 'GPX') {
-            document.getElementById('inputFormat').value = ext;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            currentRawBuffer = event.target.result;
-            const textDecoder = new TextDecoder();
-            currentRawText = textDecoder.decode(currentRawBuffer);
-            document.getElementById('refreshBtn').disabled = false;
-            parseAndProcess();
-        };
-        
-        reader.readAsArrayBuffer(file);
-    });
-
-    document.getElementById('refreshBtn').addEventListener('click', parseAndProcess);
-
-    async function parseAndProcess() {
-        const inputFormat = document.getElementById('inputFormat').value;
-        showStatus(`Parsing ${inputFormat} file...`, "text-warning");
-        document.getElementById('statsGrid').style.display = 'none';
-        document.getElementById('chartsContainer').style.display = 'none';
-        document.getElementById('activityDateContainer').style.display = 'none';
-
-        try {
-            if (inputFormat === 'FIT') {
-                if (!currentRawBuffer) return;
-                const fitParser = new FitParser({
-                    force: true,
-                    targetUnit: 'metric',
-                    temperatureUnit: 'celsius'
-                });
-                const data = await fitParser.parseAsync(currentRawBuffer);
-                if (!data.records || data.records.length === 0) {
-                    throw new Error("No data track records found in this file.");
-                }
-                parsedRecords = data.records;
-                activitySummary = data.sessions ? data.sessions[0] : {};
-            } else {
-                if (!currentRawText) return;
-                parseGpxToRecords(currentRawText);
-            }
-            processAndRenderTrack();
-        } catch (err) {
-            showStatus("Error: " + err.message, "text-danger");
-            document.getElementById('exportBtn').disabled = true;
-            document.getElementById('stravaUploadBtn').disabled = true;
-        }
-    }
-
-    function parseGpxToRecords(gpxText) {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(gpxText, "text/xml");
-        const trkpts = xmlDoc.getElementsByTagName("trkpt");
-        if (trkpts.length === 0) throw new Error("No GPX track segments or elements located.");
-
-        parsedRecords = [];
-        let totalDist = 0;
-        let lastLat = null, lastLng = null;
-
-        for (let i = 0; i < trkpts.length; i++) {
-            const pt = trkpts[i];
-            const lat = parseFloat(pt.getAttribute("lat"));
-            const lng = parseFloat(pt.getAttribute("lon"));
-            const eleNode = pt.getElementsByTagName("ele")[0];
-            const timeNode = pt.getElementsByTagName("time")[0];
-            const hrNode = pt.getElementsByTagName("hr")[0] || pt.getElementsByTagName("gpxtpx:hr")[0];
-            const cadNode = pt.getElementsByTagName("cad")[0] || pt.getElementsByTagName("gpxtpx:cad")[0];
-            const pwrNode = pt.getElementsByTagName("power")[0];
-            const tmpNode = pt.getElementsByTagName("atemp")[0] || pt.getElementsByTagName("gpxtpx:atemp")[0];
-            const spdNode = pt.getElementsByTagName("speed")[0] || pt.getElementsByTagName("gpxtpx:speed")[0];
-
-            let record = {
-                position_lat: lat,
-                position_long: lng,
-                altitude: eleNode ? parseFloat(eleNode.textContent) : undefined,
-                timestamp: timeNode ? timeNode.textContent : undefined,
-                heart_rate: hrNode ? parseInt(hrNode.textContent) : undefined,
-                cadence: cadNode ? parseInt(cadNode.textContent) : undefined,
-                power: pwrNode ? parseInt(pwrNode.textContent) : undefined,
-                temperature: tmpNode ? parseFloat(tmpNode.textContent) : undefined,
-                speed: spdNode ? parseFloat(spdNode.textContent) : undefined
-            };
-
-            if (lastLat !== null && lastLng !== null) {
-                const R = 6371000;
-                const dLat = (lat - lastLat) * Math.PI / 180;
-                const dLon = (lng - lastLng) * Math.PI / 180;
-                const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                totalDist += R * c;
-            }
-            lastLat = lat; lastLng = lng;
-            parsedRecords.push(record);
-        }
-
-        activitySummary = {
-            total_distance: totalDist,
-            total_moving_time: parsedRecords.length, 
-            total_ascent: 0 
-        };
-    }
-
-    function createTelemetryChart(canvasId, label, data, color, unit) {
+    // --- Graph Display Generation Pipeline Engine ---
+    const createTelemetryChart = (canvasId, label, data, color, unit) => {
         const ctx = document.getElementById(canvasId).getContext('2d');
-        const labels = Array.from({length: data.length}, (_, i) => i + 1);
         return new Chart(ctx, {
             type: 'line',
             data: {
-                labels: labels,
+                labels: Array.from({ length: data.length }, (_, i) => i + 1),
                 datasets: [{
                     label: `${label} (${unit})`,
                     data: data,
@@ -437,28 +373,85 @@
                     tooltip: { mode: 'index', intersect: false }
                 },
                 scales: {
-                    x: { display: false, title: { display: false } },
+                    x: { display: false },
                     y: { beginAtZero: true }
                 }
             }
         });
-    }
+    };
 
-    function processAndRenderTrack() {
-        let latLngs = [];
-        const inputEncoding = document.getElementById('inputEncoding').value;
-        const outputFormat = document.getElementById('outputFormat').value;
-        const outputEncoding = document.getElementById('outputEncoding').value;
+    // --- Raw GPX Document String Tracker Parser ---
+    const parseGpxToRecords = (gpxText) => {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(gpxText, 'text/xml');
+        const trkpts = xmlDoc.getElementsByTagName('trkpt');
+        if (trkpts.length === 0) {
+            throw new Error('No GPX track segments or elements located.');
+        }
+
+        parsedRecords = [];
+        let totalDist = 0;
+        let lastLat = null;
+        let lastLng = null;
+
+        for (let i = 0; i < trkpts.length; i++) {
+            const pt = trkpts[i];
+            const lat = parseFloat(pt.getAttribute('lat'));
+            const lng = parseFloat(pt.getAttribute('lon'));
+            const eleNode = pt.getElementsByTagName('ele')[0];
+            const timeNode = pt.getElementsByTagName('time')[0];
+            const hrNode = pt.getElementsByTagName('hr')[0] || pt.getElementsByTagName('gpxtpx:hr')[0];
+            const cadNode = pt.getElementsByTagName('cad')[0] || pt.getElementsByTagName('gpxtpx:cad')[0];
+            const pwrNode = pt.getElementsByTagName('power')[0];
+            const tmpNode = pt.getElementsByTagName('atemp')[0] || pt.getElementsByTagName('gpxtpx:atemp')[0];
+            const spdNode = pt.getElementsByTagName('speed')[0] || pt.getElementsByTagName('gpxtpx:speed')[0];
+
+            const record = {
+                position_lat: lat,
+                position_long: lng,
+                altitude: eleNode ? parseFloat(eleNode.textContent) : undefined,
+                timestamp: timeNode ? timeNode.textContent : undefined,
+                heart_rate: hrNode ? parseInt(hrNode.textContent, 10) : undefined,
+                cadence: cadNode ? parseInt(cadNode.textContent, 10) : undefined,
+                power: pwrNode ? parseInt(pwrNode.textContent, 10) : undefined,
+                temperature: tmpNode ? parseFloat(tmpNode.textContent) : undefined,
+                speed: spdNode ? parseFloat(spdNode.textContent) : undefined
+            };
+
+            if (lastLat !== null && lastLng !== null) {
+                const R = 6371000;
+                const dLat = (lat - lastLat) * Math.PI / 180;
+                const dLon = (lng - lastLng) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                totalDist += R * c;
+            }
+            lastLat = lat;
+            lastLng = lng;
+            parsedRecords.push(record);
+        }
+
+        activitySummary = {
+            total_distance: totalDist,
+            total_moving_time: parsedRecords.length,
+            total_ascent: 0
+        };
+    };
+
+    // --- Conversion Engine Framework Process ---
+    const processAndRenderTrack = () => {
+        const latLngs = [];
+        const inputEncoding = dom.inputEncoding.value;
+        const outputFormat = dom.outputFormat.value;
+        const outputEncoding = dom.outputEncoding.value;
         
-        // Setup base GPX headers
         const startTime = parsedRecords[0].timestamp ? new Date(parsedRecords[0].timestamp).toISOString() : new Date().toISOString();
         const totalCalories = activitySummary.total_calories || 0;
 
-        // Display activity date
         if (parsedRecords[0].timestamp) {
             const dateObj = new Date(parsedRecords[0].timestamp);
-            document.getElementById('activityDateSpan').innerText = dateObj.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + " " + dateObj.toLocaleTimeString();
-            document.getElementById('activityDateContainer').style.display = 'block';
+            dom.activityDateSpan.innerText = `${dateObj.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} ${dateObj.toLocaleTimeString()}`;
+            dom.activityDateContainer.classList.remove('d-none');
         }
 
         gpxContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -471,41 +464,37 @@
     <name>Converted Activity Track</name>
     <trkseg>`;
 
-        let speedValues = [];
-        let heartRateValues = [];
-        let cadenceValues = [];
-        let powerValues = [];
-        let tempValues = [];
+        const metrics = { speed: [], hr: [], cad: [], pwr: [], temp: [] };
 
-        parsedRecords.forEach(record => {
-            // Keep the vital tracking parameters requested
+        parsedRecords.forEach((record) => {
             const hr = record.heart_rate;
             const cad = record.cadence;
-            
-            // FIX: Map missing power correctly from alternative native telemetry tracks or fallback properties
-            const power = record.power !== undefined ? record.power : (record.accumulated_power !== undefined ? record.accumulated_power : record.active_power);
-            
             const temp = record.temperature;
-            const speed = record.speed; // explicitly captured telemetry node
+            const speed = record.speed;
+            const power = record.power ?? record.accumulated_power ?? record.active_power ?? 0;
 
-            if (speed !== undefined) speedValues.push(speed * 3.6); // standard internal m/s track converted to km/h for array charts
-            if (hr !== undefined) heartRateValues.push(hr);
-            if (cad !== undefined) cadenceValues.push(cad);
-            if (power !== undefined) powerValues.push(power);
-            if (temp !== undefined) tempValues.push(temp);
+            if (speed !== undefined) {
+                metrics.speed.push(speed * 3.6);
+            }
+            if (hr !== undefined) {
+                metrics.hr.push(hr);
+            }
+            if (cad !== undefined) {
+                metrics.cad.push(cad);
+            }
+            if (power !== undefined) {
+                metrics.pwr.push(power);
+            }
+            if (temp !== undefined) {
+                metrics.temp.push(temp);
+            }
 
             if (record.position_lat && record.position_long) {
-                let lat = record.position_lat;
-                let lng = record.position_long;
-                
-                // Step 1: Normalize inputs to WGS84
-                const [wgsLng, wgsLat] = toWgs84(lng, lat, inputEncoding);
+                const [wgsLng, wgsLat] = toWgs84(record.position_long, record.position_lat, inputEncoding);
                 latLngs.push([wgsLat, wgsLng]);
 
-                // Step 2: Convert WGS84 back to designated target output encoding
                 const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
 
-                // Append node data into GPX format tracking point elements
                 gpxContent += `
       <trkpt lat="${outLat.toFixed(6)}" lon="${outLng.toFixed(6)}">
         ${record.altitude !== undefined ? `<ele>${record.altitude.toFixed(1)}</ele>` : ''}
@@ -528,14 +517,13 @@
   </trk>
 </gpx>`;
 
-        if (outputFormat !== "GPX") {
-            gpxContent = JSON.stringify({ type: "FIT_MOCK_DATA", targetEncoding: outputEncoding, generatedPointsCount: parsedRecords.length, tracks: parsedRecords });
+        if (outputFormat !== 'GPX') {
+            gpxContent = JSON.stringify({ type: 'FIT_MOCK_DATA', targetEncoding: outputEncoding, generatedPointsCount: parsedRecords.length, tracks: parsedRecords });
         }
 
-        // Calculate and Render Dashboard Statistics Panels
-        const totalDist = activitySummary.total_distance ? (activitySummary.total_distance / 1000).toFixed(2) + " km" : "0.00 km";
-        
-        let movingTimeStr = "-";
+        // Statistical Panel Calculations
+        const totalDist = activitySummary.total_distance ? (activitySummary.total_distance / 1000).toFixed(2) + ' km' : '0.00 km';
+        let movingTimeStr = '-';
         if (activitySummary.total_moving_time) {
             const s = Math.floor(activitySummary.total_moving_time % 60);
             const m = Math.floor((activitySummary.total_moving_time / 60) % 60);
@@ -543,125 +531,176 @@
             movingTimeStr = `${h}h ${m}m ${s}s`;
         }
         
-        const eleGain = activitySummary.total_ascent ? activitySummary.total_ascent.toFixed(0) + " m" : "0 m";
-        
-        const avgSpd = activitySummary.avg_speed ? (activitySummary.avg_speed * 3.6).toFixed(1) : (speedValues.length ? (speedValues.reduce((a,b)=>a+b,0)/speedValues.length).toFixed(1) : 0);
-        const maxSpd = activitySummary.max_speed ? (activitySummary.max_speed * 3.6).toFixed(1) : (speedValues.length ? Math.max(...speedValues).toFixed(1) : 0);
-        
-        const avgHr = activitySummary.avg_heart_rate ? activitySummary.avg_heart_rate.toFixed(0) : (heartRateValues.length ? (heartRateValues.reduce((a,b)=>a+b,0)/heartRateValues.length).toFixed(0) : 0);
-        const maxHr = activitySummary.max_heart_rate ? activitySummary.max_heart_rate.toFixed(0) : (heartRateValues.length ? Math.max(...heartRateValues).toFixed(0) : 0);
+        const eleGain = activitySummary.total_ascent ? activitySummary.total_ascent.toFixed(0) + ' m' : '0 m';
+        const avgSpd = activitySummary.avg_speed ? (activitySummary.avg_speed * 3.6).toFixed(1) : (metrics.speed.length ? (metrics.speed.reduce((a, b) => a + b, 0) / metrics.speed.length).toFixed(1) : 0);
+        const maxSpd = activitySummary.max_speed ? (activitySummary.max_speed * 3.6).toFixed(1) : (metrics.speed.length ? Math.max(...metrics.speed).toFixed(1) : 0);
+        const avgHr = activitySummary.avg_heart_rate ? activitySummary.avg_heart_rate.toFixed(0) : (metrics.hr.length ? (metrics.hr.reduce((a, b) => a + b, 0) / metrics.hr.length).toFixed(0) : 0);
+        const maxHr = activitySummary.max_heart_rate ? activitySummary.max_heart_rate.toFixed(0) : (metrics.hr.length ? Math.max(...metrics.hr).toFixed(0) : 0);
+        const avgCad = activitySummary.avg_cadence ? activitySummary.avg_cadence.toFixed(0) : (metrics.cad.length ? (metrics.cad.reduce((a, b) => a + b, 0) / metrics.cad.length).toFixed(0) : 0);
+        const maxCad = activitySummary.max_cadence ? activitySummary.max_cadence.toFixed(0) : (metrics.cad.length ? Math.max(...metrics.cad).toFixed(0) : 0);
+        const avgPwr = activitySummary.avg_power ? activitySummary.avg_power.toFixed(0) : (metrics.pwr.length ? (metrics.pwr.reduce((a, b) => a + b, 0) / metrics.pwr.length).toFixed(0) : 0);
+        const maxPwr = activitySummary.max_power ? activitySummary.max_power.toFixed(0) : (metrics.pwr.length ? Math.max(...metrics.pwr).toFixed(0) : 0);
+        const avgTmp = metrics.temp.length ? (metrics.temp.reduce((a, b) => a + b, 0) / metrics.temp.length).toFixed(1) : 0;
+        const maxTmp = metrics.temp.length ? Math.max(...metrics.temp).toFixed(1) : 0;
 
-        const avgCad = activitySummary.avg_cadence ? activitySummary.avg_cadence.toFixed(0) : (cadenceValues.length ? (cadenceValues.reduce((a,b)=>a+b,0)/cadenceValues.length).toFixed(0) : 0);
-        const maxCad = activitySummary.max_cadence ? activitySummary.max_cadence.toFixed(0) : (cadenceValues.length ? Math.max(...cadenceValues).toFixed(0) : 0);
+        dom.statDistance.innerText = totalDist;
+        dom.statMovingTime.innerText = movingTimeStr;
+        dom.statElevation.innerText = eleGain;
+        dom.statSpeed.innerText = `${avgSpd} / ${maxSpd} km/h`;
+        dom.statHeartRate.innerText = `${avgHr} / ${maxHr} bpm`;
+        dom.statCadence.innerText = `${avgCad} / ${maxCad} rpm`;
+        dom.statPower.innerText = `${avgPwr} W / ${maxPwr} W`;
+        dom.statTemperature.innerText = metrics.temp.length ? `${avgTmp} / ${maxTmp} °C` : '-';
         
-        const avgPwr = activitySummary.avg_power ? activitySummary.avg_power.toFixed(0) : (powerValues.length ? (powerValues.reduce((a,b)=>a+b,0)/powerValues.length).toFixed(0) : 0);
-        const maxPwr = activitySummary.max_power ? activitySummary.max_power.toFixed(0) : (powerValues.length ? Math.max(...powerValues).toFixed(0) : 0);
-        
-        const avgTmp = tempValues.length ? (tempValues.reduce((a,b)=>a+b,0)/tempValues.length).toFixed(1) : 0;
-        const maxTmp = tempValues.length ? Math.max(...tempValues).toFixed(1) : 0;
+        dom.statsGrid.classList.remove('d-none');
 
-        document.getElementById('statDistance').innerText = totalDist;
-        document.getElementById('statMovingTime').innerText = movingTimeStr;
-        document.getElementById('statElevation').innerText = eleGain;
-        document.getElementById('statSpeed').innerText = `${avgSpd} / ${maxSpd} km/h`;
-        document.getElementById('statHeartRate').innerText = `${avgHr} / ${maxHr} bpm`;
-        document.getElementById('statCadence').innerText = `${avgCad} / ${maxCad} rpm`;
-        document.getElementById('statPower').innerText = `${avgPwr} W / ${maxPwr} W`;
-        document.getElementById('statTemperature').innerText = tempValues.length ? `${avgTmp} / ${maxTmp} °C` : "-";
-        document.getElementById('statsGrid').style.display = 'flex';
+        // Reset and Destruct Existing Chart Context Instances
+        Object.keys(chartInstances).forEach((key) => {
+            if (chartInstances[key]) {
+                chartInstances[key].destroy();
+            }
+        });
 
-        // Render Telemetry Charts
-        if (speedChartInstance) speedChartInstance.destroy();
-        if (heartRateChartInstance) heartRateChartInstance.destroy();
-        if (powerChartInstance) powerChartInstance.destroy();
-        if (cadenceChartInstance) cadenceChartInstance.destroy();
-        if (temperatureChartInstance) temperatureChartInstance.destroy();
-
-        if (speedValues.length || heartRateValues.length || powerValues.length || cadenceValues.length || tempValues.length) {
-            document.getElementById('chartsContainer').style.display = 'block';
-            speedChartInstance = createTelemetryChart('speedChart', 'Speed', speedValues, '#0d6efd', 'km/h');
-            heartRateChartInstance = createTelemetryChart('heartRateChart', 'Heart Rate', heartRateValues, '#e83e8c', 'bpm');
-            cadenceChartInstance = createTelemetryChart('cadenceChart', 'Cadence', cadenceValues, '#198754', 'rpm');
-            powerChartInstance = createTelemetryChart('powerChart', 'Power', powerValues, '#dc3545', 'W');
-            temperatureChartInstance = createTelemetryChart('temperatureChart', 'Temperature', tempValues, '#fd7e14', '°C');
+        if (metrics.speed.length || metrics.hr.length || metrics.pwr.length || metrics.cad.length || metrics.temp.length) {
+            dom.chartsContainer.classList.remove('d-none');
+            chartInstances.speed = createTelemetryChart('speedChart', 'Speed', metrics.speed, '#0D6EFD', 'km/h');
+            chartInstances.heartRate = createTelemetryChart('heartRateChart', 'Heart Rate', metrics.hr, '#E83E8C', 'bpm');
+            chartInstances.cadence = createTelemetryChart('cadenceChart', 'Cadence', metrics.cad, '#198754', 'rpm');
+            chartInstances.power = createTelemetryChart('powerChart', 'Power', metrics.pwr, '#DC3545', 'W');
+            chartInstances.temperature = createTelemetryChart('temperatureChart', 'Temperature', metrics.temp, '#FD7E14', '°C');
         }
 
-        // Clear existing map layers except base map
-        map.eachLayer(layer => {
+        // Wipe Layer Vector Overlays
+        map.eachLayer((layer) => {
             if (layer instanceof L.Polyline || layer instanceof L.Marker) {
                 map.removeLayer(layer);
             }
         });
 
         if (latLngs.length > 0) {
-            // Display track path visually over the map object 
-            const polyline = L.polyline(latLngs, {color: '#0056b3', weight: 4}).addTo(map);
+            const polyline = L.polyline(latLngs, { color: '#0056B3', weight: 4 }).addTo(map);
             map.fitBounds(polyline.getBounds());
             
-            L.marker(latLngs[0]).addTo(map).bindPopup("Start Point");
-            L.marker(latLngs[latLngs.length - 1]).addTo(map).bindPopup("End Point");
+            L.marker(latLngs[0]).addTo(map).bindPopup('Start Point');
+            L.marker(latLngs[latLngs.length - 1]).addTo(map).bindPopup('End Point');
 
-            showStatus(`Successfully loaded ${parsedRecords.length} records!`, "text-success");
-            document.getElementById('exportBtn').disabled = false;
+            showStatus(`Successfully loaded ${parsedRecords.length} records!`, 'text-success');
+            dom.exportBtn.disabled = false;
             if (localStorage.getItem('strava_access_token')) {
-                document.getElementById('stravaUploadBtn').disabled = false;
+                dom.stravaUploadBtn.disabled = false;
             }
         } else {
-            showStatus("Parsed track data successfully, but found no valid GPS map coordinates.", "text-success");
-            document.getElementById('exportBtn').disabled = true;
-            document.getElementById('stravaUploadBtn').disabled = true;
+            showStatus('Parsed track data successfully, but found no valid GPS map coordinates.', 'text-success');
+            dom.exportBtn.disabled = true;
+            dom.stravaUploadBtn.disabled = true;
         }
-    }
+    };
 
-    // Export Handler via Browser Blob Download Routine
-    document.getElementById('exportBtn').addEventListener('click', function() {
-        if (!gpxContent) return;
-        const format = document.getElementById('outputFormat').value;
+    // --- Async Local Document Pipeline Deserializer ---
+    const parseAndProcess = async () => {
+        const inputFormat = dom.inputFormat.value;
+        showStatus(`Parsing ${inputFormat} file...`, 'text-warning');
+        dom.statsGrid.classList.add('d-none');
+        dom.chartsContainer.classList.add('d-none');
+        dom.activityDateContainer.classList.add('d-none');
+
+        try {
+            if (inputFormat === 'FIT') {
+                if (!currentRawBuffer) {
+                    return;
+                }
+                const fitParser = new FitParser({ force: true, targetUnit: 'metric', temperatureUnit: 'celsius' });
+                const data = await fitParser.parseAsync(currentRawBuffer);
+                if (!data.records || data.records.length === 0) {
+                    throw new Error('No data track records found in this file.');
+                }
+                parsedRecords = data.records;
+                activitySummary = data.sessions ? data.sessions[0] : {};
+            } else {
+                if (!currentRawText) {
+                    return;
+                }
+                parseGpxToRecords(currentRawText);
+            }
+            processAndRenderTrack();
+        } catch (err) {
+            showStatus(`Error: ${err.message}`, 'text-danger');
+            dom.exportBtn.disabled = true;
+            dom.stravaUploadBtn.disabled = true;
+        }
+    };
+
+    // --- Standard Application Trigger Event Registrars ---
+    dom.fitFile.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const ext = file.name.split('.').pop().toUpperCase();
+        if (ext === 'FIT' || ext === 'GPX') {
+            dom.inputFormat.value = ext;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            currentRawBuffer = event.target.result;
+            const textDecoder = new TextDecoder();
+            currentRawText = textDecoder.decode(currentRawBuffer);
+            dom.refreshBtn.disabled = false;
+            parseAndProcess();
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    dom.refreshBtn.addEventListener('click', parseAndProcess);
+
+    dom.exportBtn.addEventListener('click', () => {
+        if (!gpxContent) {
+            return;
+        }
+        const format = dom.outputFormat.value;
         const mimeType = format === 'GPX' ? 'application/gpx+xml' : 'application/octet-stream';
         const filename = `converted_activity.${format.toLowerCase()}`;
         
         const blob = new Blob([gpxContent], { type: `${mimeType};charset=utf-8;` });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", filename);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     });
 
-    function showStatus(msg, type) {
-        const el = document.getElementById('statusMessage');
-        el.innerText = msg;
-        el.className = "fw-bold small " + type;
-    }
-
-    // Strava Integration Setup
+    // --- External Integrations: Strava Live Upload System (OAuth 2.0 SSO) ---
     const redirectUri = window.location.origin + window.location.pathname;
 
-    document.getElementById('stravaClientId').value = localStorage.getItem('strava_client_id') || '';
-    document.getElementById('stravaClientSecret').value = localStorage.getItem('strava_client_secret') || '';
+    dom.stravaClientId.value = localStorage.getItem('strava_client_id') || '';
+    dom.stravaClientSecret.value = localStorage.getItem('strava_client_secret') || '';
 
-    document.getElementById('saveStravaCreds').addEventListener('click', () => {
-        localStorage.setItem('strava_client_id', document.getElementById('stravaClientId').value.trim());
-        localStorage.setItem('strava_client_secret', document.getElementById('stravaClientSecret').value.trim());
+    dom.saveStravaCreds.addEventListener('click', () => {
+        localStorage.setItem('strava_client_id', dom.stravaClientId.value.trim());
+        localStorage.setItem('strava_client_secret', dom.stravaClientSecret.value.trim());
         alert('Credentials Saved!');
     });
 
-    document.getElementById('stravaConnectBtn').addEventListener('click', () => {
+    dom.stravaConnectBtn.addEventListener('click', () => {
         const clientId = localStorage.getItem('strava_client_id');
-        if (!clientId) return alert('Please save your Strava Client ID first.');
+        if (!clientId) {
+            return alert('Please save your Strava Client ID first.');
+        }
         window.location.href = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=activity:write`;
     });
 
-    async function checkOauthCallback() {
+    const checkOauthCallback = async () => {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
         
         if (code) {
             const clientId = localStorage.getItem('strava_client_id');
             const clientSecret = localStorage.getItem('strava_client_secret');
-            document.getElementById('stravaStatus').innerText = "Exchanging token...";
+            dom.stravaStatus.innerText = 'Exchanging token...';
 
             try {
                 const response = await fetch('https://www.strava.com/oauth/token', {
@@ -677,28 +716,30 @@
                 const authData = await response.json();
                 if (authData.access_token) {
                     localStorage.setItem('strava_access_token', authData.access_token);
-                    document.getElementById('stravaStatus').innerText = `Connected as ${authData.athlete.firstname}`;
+                    dom.stravaStatus.innerText = `Connected as ${authData.athlete.firstname}`;
                     window.history.replaceState({}, document.title, window.location.pathname);
                 } else {
-                    document.getElementById('stravaStatus').innerText = "Authentication failed.";
+                    dom.stravaStatus.innerText = 'Authentication failed.';
                 }
             } catch (err) {
-                document.getElementById('stravaStatus').innerText = "Error: " + err.message;
+                dom.stravaStatus.innerText = `Error: ${err.message}`;
             }
         } else if (localStorage.getItem('strava_access_token')) {
-            document.getElementById('stravaStatus').innerText = "Connected to Strava";
+            dom.stravaStatus.innerText = 'Connected to Strava';
         }
-    }
+    };
     checkOauthCallback();
 
-    document.getElementById('stravaUploadBtn').addEventListener('click', async () => {
+    dom.stravaUploadBtn.addEventListener('click', async () => {
         const token = localStorage.getItem('strava_access_token');
-        if (!token || !gpxContent) return;
+        if (!token || !gpxContent) {
+            return;
+        }
 
-        document.getElementById('stravaStatus').innerText = "Uploading to Strava...";
-        document.getElementById('stravaUploadBtn').disabled = true;
+        dom.stravaStatus.innerText = 'Uploading to Strava...';
+        dom.stravaUploadBtn.disabled = true;
 
-        const format = document.getElementById('outputFormat').value.toLowerCase();
+        const format = dom.outputFormat.value.toLowerCase();
         const blob = new Blob([gpxContent], { type: format === 'gpx' ? 'application/gpx+xml' : 'application/octet-stream' });
         const formData = new FormData();
         formData.append('file', blob, `activity.${format}`);
@@ -712,14 +753,14 @@
             });
             const result = await response.json();
             if (response.ok || result.id) {
-                document.getElementById('stravaStatus').innerText = "Uploaded Successfully!";
+                dom.stravaStatus.innerText = 'Uploaded Successfully!';
             } else {
-                document.getElementById('stravaStatus').innerText = "Upload failed: " + (result.message || "Error");
-                document.getElementById('stravaUploadBtn').disabled = false;
+                dom.stravaStatus.innerText = `Upload failed: ${result.message || 'Error'}`;
+                dom.stravaUploadBtn.disabled = false;
             }
         } catch (err) {
-            document.getElementById('stravaStatus').innerText = "Upload error: " + err.message;
-            document.getElementById('stravaUploadBtn').disabled = false;
+            dom.stravaStatus.innerText = `Upload error: ${err.message}`;
+            dom.stravaUploadBtn.disabled = false;
         }
     });
 </script>

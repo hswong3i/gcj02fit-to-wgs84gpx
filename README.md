@@ -2,11 +2,16 @@
 
 Upload your Magene C606 / C706 .FIT file to view data and export to standard GPX.
 
+- Support bi-directional convert between .FIT / .GPX
+- Support tri-directional convert between GCJ02 /BD09 / WGS84
+- Support live preview data with refresh
+- Support upload to Strava with OAuth 2.0 SSO (not tested)
+
 See <https://hswong3i.github.io/gcj02fit-to-wgs84gpx/>
 
 ## Why?
 
-Since recent firmware upgrade, the GPS data now encoded with GCj02 format for Hong Kong, so it is not usable with Strava which expecting GPS data encoded with standard WGS84 format.
+Since recent firmware upgrade, the GPS data now encoded with GCJ02 format for Hong Kong, so it is not usable with Strava which expecting GPS data encoded with standard WGS84 format.
 
 Magene also remove the auto sync and upload .FIT (with auto GCJ02 to WGS84 fixes) files to Strava.
 
@@ -28,7 +33,13 @@ Created by Gemini as below:
 
     # Rules
     only change code required
-    no coding syntax cleanup and rewrite
+    only change comment required
+    synchronize coding style
+    synchronize comment style
+    synchronize implementation style
+    synchronize layout design
+    check with eslint
+    check with stylelint
     fix missing power mapping
 
     # Input 
@@ -42,7 +53,7 @@ Created by Gemini as below:
     convert source file format into WGS84
     convert source file encoding into .GPX
     add refresh button for uploaded source file
-    
+
     keep "Speed"
     keep "Heart Rate"
     keep "Cadence"
