@@ -177,6 +177,7 @@
             <div class="mb-4"><canvas id="heartRateChart" height="120"></canvas></div>
             <div class="mb-4"><canvas id="cadenceChart" height="120"></canvas></div>
             <div class="mb-4"><canvas id="powerChart" height="120"></canvas></div>
+            <div class="mb-4"><canvas id="elevationChart" height="120"></canvas></div>
             <div class="mb-2"><canvas id="temperatureChart" height="120"></canvas></div>
         </div>
     </div>
@@ -232,6 +233,7 @@
         heartRate: null,
         power: null,
         cadence: null,
+        elevation: null,
         temperature: null
     };
 
@@ -391,8 +393,10 @@
 
         parsedRecords = [];
         let totalDist = 0;
+        let totalAscent = 0;
         let lastLat = null;
         let lastLng = null;
+        let lastEle = null;
 
         for (let i = 0; i < trkpts.length; i++) {
             const pt = trkpts[i];
@@ -406,10 +410,12 @@
             const tmpNode = pt.getElementsByTagName('atemp')[0] || pt.getElementsByTagName('gpxtpx:atemp')[0];
             const spdNode = pt.getElementsByTagName('speed')[0] || pt.getElementsByTagName('gpxtpx:speed')[0];
 
+            const ele = eleNode ? parseFloat(eleNode.textContent) : undefined;
+
             const record = {
                 position_lat: lat,
                 position_long: lng,
-                altitude: eleNode ? parseFloat(eleNode.textContent) : undefined,
+                altitude: ele,
                 timestamp: timeNode ? timeNode.textContent : undefined,
                 heart_rate: hrNode ? parseInt(hrNode.textContent, 10) : undefined,
                 cadence: cadNode ? parseInt(cadNode.textContent, 10) : undefined,
@@ -426,15 +432,24 @@
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                 totalDist += R * c;
             }
+
+            // Sync total elevation gain loop processing
+            if (ele !== undefined && lastEle !== null && ele > lastEle) {
+                totalAscent += (ele - lastEle);
+            }
+
             lastLat = lat;
             lastLng = lng;
+            if (ele !== undefined) {
+                lastEle = ele;
+            }
             parsedRecords.push(record);
         }
 
         activitySummary = {
             total_distance: totalDist,
             total_moving_time: parsedRecords.length,
-            total_ascent: 0
+            total_ascent: totalAscent
         };
     };
 
@@ -464,13 +479,14 @@
     <name>Converted Activity Track</name>
     <trkseg>`;
 
-        const metrics = { speed: [], hr: [], cad: [], pwr: [], temp: [] };
+        const metrics = { speed: [], hr: [], cad: [], pwr: [], ele: [], temp: [] };
 
         parsedRecords.forEach((record) => {
             const hr = record.heart_rate;
             const cad = record.cadence;
             const temp = record.temperature;
             const speed = record.speed;
+            const ele = record.altitude;
             const power = record.power ?? record.accumulated_power ?? record.active_power ?? 0;
 
             if (speed !== undefined) {
@@ -484,6 +500,9 @@
             }
             if (power !== undefined) {
                 metrics.pwr.push(power);
+            }
+            if (ele !== undefined) {
+                metrics.ele.push(ele);
             }
             if (temp !== undefined) {
                 metrics.temp.push(temp);
@@ -561,12 +580,13 @@
             }
         });
 
-        if (metrics.speed.length || metrics.hr.length || metrics.pwr.length || metrics.cad.length || metrics.temp.length) {
+        if (metrics.speed.length || metrics.hr.length || metrics.pwr.length || metrics.cad.length || metrics.ele.length || metrics.temp.length) {
             dom.chartsContainer.classList.remove('d-none');
             chartInstances.speed = createTelemetryChart('speedChart', 'Speed', metrics.speed, '#0D6EFD', 'km/h');
             chartInstances.heartRate = createTelemetryChart('heartRateChart', 'Heart Rate', metrics.hr, '#E83E8C', 'bpm');
             chartInstances.cadence = createTelemetryChart('cadenceChart', 'Cadence', metrics.cad, '#198754', 'rpm');
             chartInstances.power = createTelemetryChart('powerChart', 'Power', metrics.pwr, '#DC3545', 'W');
+            chartInstances.elevation = createTelemetryChart('elevationChart', 'Elevation', metrics.ele, '#6F42C1', 'm');
             chartInstances.temperature = createTelemetryChart('temperatureChart', 'Temperature', metrics.temp, '#FD7E14', '°C');
         }
 
@@ -615,7 +635,26 @@
                     throw new Error('No data track records found in this file.');
                 }
                 parsedRecords = data.records;
-                activitySummary = data.sessions ? data.sessions[0] : {};
+                
+                // Calculate dynamic elevation gain from FIT session fields or fallback loops
+                let computedAscent = 0;
+                if (data.sessions && data.sessions[0]) {
+                    activitySummary = data.sessions[0];
+                    computedAscent = activitySummary.total_ascent || 0;
+                }
+                
+                if (!computedAscent || computedAscent === 0) {
+                    let lastEle = null;
+                    parsedRecords.forEach((rec) => {
+                        if (rec.altitude !== undefined) {
+                            if (lastEle !== null && rec.altitude > lastEle) {
+                                computedAscent += (rec.altitude - lastEle);
+                            }
+                            lastEle = rec.altitude;
+                        }
+                    });
+                    activitySummary.total_ascent = computedAscent;
+                }
             } else {
                 if (!currentRawText) {
                     return;
