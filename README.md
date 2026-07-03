@@ -1,6 +1,6 @@
 # FIT to GPX Converter & Map Viewer
 
-Upload your Magene C606 / C706 .fit file to view data and export to standard GPX.
+Upload your Magene C606 / C706 .FIT file to view data and export to standard GPX.
 
 See <https://hswong3i.github.io/gcj02fit-to-wgs84gpx/>
 
@@ -8,7 +8,7 @@ See <https://hswong3i.github.io/gcj02fit-to-wgs84gpx/>
 
 Since recent firmware upgrade, the GPS data now encoded with GCj02 format for Hong Kong, so it is not usable with Strava which expecting GPS data encoded with standard WGS84 format.
 
-Magene also remove the auto sync and upload .fit (with auto GCJ02 to WGS84 fixes) files to Strava.
+Magene also remove the auto sync and upload .FIT (with auto GCJ02 to WGS84 fixes) files to Strava.
 
 Well~ Don't Wait, Just Fix It!
 
@@ -26,19 +26,23 @@ Check with <http://0.0.0.0:8000/>
 
 Created by Gemini as below:
 
+    # Rules
     only change code required
     no coding syntax cleanup and rewrite
     fix missing power mapping
 
+    # Input 
+    upload source file in .FIT / .GPX from local
+    add ajax toggle for source file format: .FIT (default) / .GPX
+    add ajax toogle for source file encoding GCJ02 (default) / BD09 / WGS84
+
+    # Logic
     create a html file with javascript
     style CSS with Bootstrap
-    default map center to Hong Kong
-
-    upload .fit file from local
-    convert input file from GCJ20 to WGS84
-    convert and export input file from .fit to .gpx
-    upload to strava.com with OAuth2.0 SSO
-
+    convert source file format into WGS84
+    convert source file encoding into .GPX
+    add refresh button for uploaded source file
+    
     keep "Speed"
     keep "Heart Rate"
     keep "Cadence"
@@ -46,6 +50,7 @@ Created by Gemini as below:
     keep "Calories"
     keep "Temperature"
 
+    display "Activity Date"
     display "Total Distance", "Moving Time", "Elevation"
     display "Average Speed", "Max Speed"
     display "Average Heart Rate", "Max Heart Rate"
@@ -54,12 +59,19 @@ Created by Gemini as below:
     display "Average Temperature", "Max Temperature"
     not display "Calories"
 
-    display exported .gpx file with map in html
+    default map center to Hong Kong
+    display converted .GPX file with map in html
     display "Speed" in line graph
     display "Heart Rate" in line graph
     display "Cadence" in line graph
     display "Power" in line graph
     display "Temperature" in line graph
+
+    # Output
+    download converted output file in .FIT / .GPX to local
+    add ajax toogle for output file format: .FIT / .GPX (default)
+    add ajax toogle for output file encoding: GCJ02 / BD09 / WGS84 (default)
+    upload to strava.com with OAuth2.0 SSO
 
 ## Demo Layout
 
