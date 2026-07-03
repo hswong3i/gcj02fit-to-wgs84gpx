@@ -5,7 +5,6 @@ Upload your Magene C606 / C706 .FIT file to view data and export to standard GPX
 - Support bi-directional convert between .FIT / .GPX
 - Support tri-directional convert between GCJ02 /BD09 / WGS84
 - Support live preview data with refresh
-- Support upload to Strava with OAuth 2.0 SSO (not tested)
 
 See <https://hswong3i.github.io/gcj02fit-to-wgs84gpx/>
 

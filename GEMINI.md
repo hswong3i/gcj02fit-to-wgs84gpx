@@ -9,6 +9,7 @@ style with Bootstrap
 check with ESLint
 check with Stylelint
 fix missing power mapping
+remove "upload to strava.com with OAuth2.0 SSO"
 
 # Input
 upload source file in .FIT / .GPX from local
@@ -51,4 +52,3 @@ display "Temperature" in line graph
 download converted output file in .FIT / .GPX to local
 add ajax toogle for output file format: .FIT / .GPX (default)
 add ajax toogle for output file encoding: GCJ02 / BD09 / WGS84 (default)
-upload to strava.com with OAuth2.0 SSO
