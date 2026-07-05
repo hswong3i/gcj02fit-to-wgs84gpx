@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIT to GPX Converter & Map Viewer</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-fork-ribbon-css@0.2.3/gh-fork-ribbon.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -55,8 +55,8 @@
                     <div class="col-6">
                         <label class="small fw-semibold text-muted" for="outputFormat">Format</label>
                         <select id="outputFormat" class="form-select form-select-sm">
-                            <option value="FIT">.FIT</option>
-                            <option value="GPX" selected>.GPX</option>
+                            <option value="FIT" selected>.FIT</option>
+                            <option value="GPX">.GPX</option>
                         </select>
                     </div>
                     <div class="col-6">
@@ -156,11 +156,11 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
 
 <script type="module">
-    import FitParser from 'https://cdn.jsdelivr.net/npm/fit-file-parser@3.0.0/+esm';
+    import { Decoder, Encoder, Stream, Profile } from 'https://cdn.jsdelivr.net/npm/@garmin/fitsdk@21.208.0/+esm';
 
     // --- Dynamic Internal Cache Elements Mapping ---
     const dom = {
@@ -190,6 +190,7 @@
     let map;
     let parsedRecords = [];
     let activitySummary = {};
+    let outputBlobData = null;
     let gpxContent = '';
     let currentRawBuffer = null;
     let currentRawText = null;
@@ -223,7 +224,7 @@
         let ret = -100.0 + 2.0 * lng + 3.0 * lat + 0.2 * lat * lat + 0.1 * lng * lat + 0.2 * Math.sqrt(Math.abs(lng));
         ret += (20.0 * Math.sin(6.0 * lng * Math.PI) + 20.0 * Math.sin(2.0 * lng * Math.PI)) * 2.0 / 3.0;
         ret += (20.0 * Math.sin(lat * Math.PI) + 40.0 * Math.sin(lat / 3.0 * Math.PI)) * 2.0 / 3.0;
-        ret += (160.0 * Math.sin(lat / 12.0 * Math.PI) + 320 * Math.sin(lat * Math.PI / 30.0)) * 2.0 / 3.0;
+        ret += (160.0 * Math.sin(lat * Math.PI / 12.0) + 320 * Math.sin(lat * Math.PI / 30.0)) * 2.0 / 3.0;
         return ret;
     };
 
@@ -231,7 +232,7 @@
         let ret = 300.0 + lng + 2.0 * lat + 0.1 * lng * lng + 0.1 * lng * lat + 0.1 * Math.sqrt(Math.abs(lng));
         ret += (20.0 * Math.sin(6.0 * lng * Math.PI) + 20.0 * Math.sin(2.0 * lng * Math.PI)) * 2.0 / 3.0;
         ret += (20.0 * Math.sin(lng * Math.PI) + 40.0 * Math.sin(lng / 3.0 * Math.PI)) * 2.0 / 3.0;
-        ret += (150.0 * Math.sin(lng / 12.0 * Math.PI) + 300.0 * Math.sin(lng / 30.0 * Math.PI)) * 2.0 / 3.0;
+        ret += (150.0 * Math.sin(lng * Math.PI / 12.0) + 300.0 * Math.sin(lng * Math.PI / 30.0)) * 2.0 / 3.0;
         return ret;
     };
 
@@ -290,22 +291,14 @@
     };
 
     const toWgs84 = (lng, lat, fromEncoding) => {
-        if (fromEncoding === 'GCJ02') {
-            return gcj02ToWgs84(lng, lat);
-        }
-        if (fromEncoding === 'BD09') {
-            return bd09ToWgs84(lng, lat);
-        }
+        if (fromEncoding === 'GCJ02') return gcj02ToWgs84(lng, lat);
+        if (fromEncoding === 'BD09') return bd09ToWgs84(lng, lat);
         return [lng, lat];
     };
 
     const fromWgs84 = (lng, lat, toEncoding) => {
-        if (toEncoding === 'GCJ02') {
-            return wgs84ToGcj02(lng, lat);
-        }
-        if (toEncoding === 'BD09') {
-            return wgs84ToBd09(lng, lat);
-        }
+        if (toEncoding === 'GCJ02') return wgs84ToGcj02(lng, lat);
+        if (toEncoding === 'BD09') return wgs84ToBd09(lng, lat);
         return [lng, lat];
     };
 
@@ -360,9 +353,18 @@
         parsedRecords = [];
         let totalDist = 0;
         let totalAscent = 0;
+        let totalCalories = 0;
         let lastLat = null;
         let lastLng = null;
         let lastEle = null;
+
+        const descNode = xmlDoc.getElementsByTagName('desc')[0];
+        if (descNode && descNode.textContent.includes('Calories:')) {
+            const match = descNode.textContent.match(/Calories:\s*([\d.]+)/);
+            if (match) {
+                totalCalories = parseFloat(match[1]);
+            }
+        }
 
         for (let i = 0; i < trkpts.length; i++) {
             const pt = trkpts[i];
@@ -394,12 +396,11 @@
                 const R = 6371000;
                 const dLat = (lat - lastLat) * Math.PI / 180;
                 const dLon = (lng - lastLng) * Math.PI / 180;
-                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(lastLat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                 totalDist += R * c;
             }
 
-            // Sync total elevation gain loop processing
             if (ele !== undefined && lastEle !== null && ele > lastEle) {
                 totalAscent += (ele - lastEle);
             }
@@ -415,7 +416,8 @@
         activitySummary = {
             total_distance: totalDist,
             total_moving_time: parsedRecords.length,
-            total_ascent: totalAscent
+            total_ascent: totalAscent,
+            total_calories: totalCalories
         };
     };
 
@@ -426,10 +428,10 @@
         const outputFormat = dom.outputFormat.value;
         const outputEncoding = dom.outputEncoding.value;
         
-        const startTime = parsedRecords[0].timestamp ? new Date(parsedRecords[0].timestamp).toISOString() : new Date().toISOString();
-        const totalCalories = activitySummary.total_calories || 0;
+        const startTime = parsedRecords[0] && parsedRecords[0].timestamp ? new Date(parsedRecords[0].timestamp).toISOString() : new Date().toISOString();
+        const totalCalories = activitySummary.total_calories || activitySummary.calories || 0;
 
-        if (parsedRecords[0].timestamp) {
+        if (parsedRecords[0] && parsedRecords[0].timestamp) {
             const dateObj = new Date(parsedRecords[0].timestamp);
             dom.activityDateSpan.innerText = `${dateObj.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} ${dateObj.toLocaleTimeString()}`;
             dom.activityDateContainer.classList.remove('d-none');
@@ -448,31 +450,19 @@
         const metrics = { speed: [], hr: [], cad: [], pwr: [], ele: [], temp: [] };
 
         parsedRecords.forEach((record) => {
-            const hr = record.heart_rate;
-            const cad = record.cadence;
-            const temp = record.temperature;
-            const speed = record.speed;
-            const ele = record.altitude;
+            const hr = record.heart_rate !== undefined ? record.heart_rate : 0;
+            const cad = record.cadence !== undefined ? record.cadence : 0;
+            const temp = record.temperature !== undefined ? record.temperature : 0;
+            const speed = record.speed !== undefined ? record.speed : 0;
+            const ele = record.altitude !== undefined ? record.altitude : 0;
             const power = record.power ?? record.accumulated_power ?? record.active_power ?? 0;
 
-            if (speed !== undefined) {
-                metrics.speed.push(speed * 3.6);
-            }
-            if (hr !== undefined) {
-                metrics.hr.push(hr);
-            }
-            if (cad !== undefined) {
-                metrics.cad.push(cad);
-            }
-            if (power !== undefined) {
-                metrics.pwr.push(power);
-            }
-            if (ele !== undefined) {
-                metrics.ele.push(ele);
-            }
-            if (temp !== undefined) {
-                metrics.temp.push(temp);
-            }
+            metrics.speed.push(speed * 3.6);
+            metrics.hr.push(hr);
+            metrics.cad.push(cad);
+            metrics.pwr.push(power);
+            metrics.ele.push(ele);
+            metrics.temp.push(temp);
 
             if (record.position_lat && record.position_long) {
                 const [wgsLng, wgsLat] = toWgs84(record.position_long, record.position_lat, inputEncoding);
@@ -485,12 +475,12 @@
         ${record.altitude !== undefined ? `<ele>${record.altitude.toFixed(1)}</ele>` : ''}
         ${record.timestamp ? `<time>${new Date(record.timestamp).toISOString()}</time>` : ''}
         <extensions>
-          ${power !== undefined ? `<power>${power}</power>` : ''}
+          <power>${power}</power>
           <gpxtpx:TrackPointExtension>
-            ${hr !== undefined ? `<gpxtpx:hr>${hr}</gpxtpx:hr>` : ''}
-            ${cad !== undefined ? `<gpxtpx:cad>${cad}</gpxtpx:cad>` : ''}
-            ${temp !== undefined ? `<gpxtpx:atemp>${temp}</gpxtpx:atemp>` : ''}
-            ${speed !== undefined ? `<gpxtpx:speed>${speed}</gpxtpx:speed>` : ''}
+            <gpxtpx:hr>${hr}</gpxtpx:hr>
+            <gpxtpx:cad>${cad}</gpxtpx:cad>
+            <gpxtpx:atemp>${temp}</gpxtpx:atemp>
+            <gpxtpx:speed>${speed}</gpxtpx:speed>
           </gpxtpx:TrackPointExtension>
         </extensions>
       </trkpt>`;
@@ -502,11 +492,92 @@
   </trk>
 </gpx>`;
 
-        if (outputFormat !== 'GPX') {
-            gpxContent = JSON.stringify({ type: 'FIT_MOCK_DATA', targetEncoding: outputEncoding, generatedPointsCount: parsedRecords.length, tracks: parsedRecords });
+        if (outputFormat === 'FIT') {
+            const encoder = new Encoder(); 
+            
+            encoder.writeMesg({
+                mesgNum: Profile.MesgNum.FILE_ID,
+                type: "activity",
+                manufacturer: "development",
+                product: 1,
+                timeCreated: new Date()
+            });
+
+            // Prevent original position properties from filtering into the spreadsheet mappings
+            const { positionLat, positionLong, ...cleanSummary } = activitySummary;
+
+            encoder.writeMesg({
+                mesgNum: Profile.MesgNum.SESSION,
+                totalDistance: activitySummary.total_distance || 0,
+                totalTimerTime: activitySummary.total_moving_time || parsedRecords.length,
+                totalMovingTime: activitySummary.total_moving_time || parsedRecords.length,
+                avgSpeed: activitySummary.avg_speed || 0,
+                maxSpeed: activitySummary.max_speed || 0,
+                avgHeartRate: activitySummary.avg_heart_rate,
+                maxHeartRate: activitySummary.max_heart_rate,
+                avgCadence: activitySummary.avg_cadence,
+                maxCadence: activitySummary.max_cadence,
+                avgPower: activitySummary.avg_power,
+                maxPower: activitySummary.max_power,
+                totalCalories: totalCalories,
+                ...cleanSummary
+            });
+            
+            encoder.writeMesg({
+                mesgNum: Profile.MesgNum.ACTIVITY,
+                totalTimerTime: activitySummary.total_moving_time || parsedRecords.length,
+                numSessions: 1,
+                type: "manual",
+                event: "activity"
+            });
+
+            let accumulatedDistance = 0;
+            let lastLat = null;
+            let lastLng = null;
+
+            parsedRecords.forEach((rec) => {
+                if (!rec.position_long || !rec.position_lat) return;
+                const [wgsLng, wgsLat] = toWgs84(rec.position_long, rec.position_lat, inputEncoding);
+                
+                if (lastLat !== null && lastLng !== null) {
+                    const R = 6371000;
+                    const dLat = (wgsLat - lastLat) * Math.PI / 180;
+                    const dLon = (wgsLng - lastLng) * Math.PI / 180;
+                    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(wgsLat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                    accumulatedDistance += R * c;
+                }
+                lastLat = wgsLat;
+                lastLng = wgsLng;
+
+                const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
+
+                // Destructure and drop original unmapped decoded position keys from the rest of the target attributes sequence map
+                const { positionLat: nativeLat, positionLong: nativeLong, ...cleanRec } = rec;
+                
+                encoder.writeMesg({
+                    mesgNum: Profile.MesgNum.RECORD,
+                    positionLat: Math.round(outLat * (2147483648 / 180)),
+                    positionLong: Math.round(outLng * (2147483648 / 180)),
+                    altitude: rec.altitude,
+                    timestamp: rec.timestamp ? new Date(rec.timestamp) : new Date(),
+                    heartRate: rec.heart_rate,
+                    cadence: rec.cadence,
+                    power: rec.power,
+                    temperature: rec.temperature,
+                    speed: rec.speed,
+                    distance: accumulatedDistance,
+                    ...cleanRec
+                });
+            });
+            
+            const uint8Array = encoder.close();
+            outputBlobData = new Blob([uint8Array], { type: 'application/octet-stream' });
+        } else {
+            outputBlobData = new Blob([gpxContent], { type: 'application/gpx+xml;charset=utf-8;' });
         }
 
-        // Statistical Panel Calculations
+        // Statistical Panel Calculations (Strict inclusion of 0 values for averages)
         const totalDist = activitySummary.total_distance ? (activitySummary.total_distance / 1000).toFixed(2) + ' km' : '0.00 km';
         let movingTimeStr = '-';
         if (activitySummary.total_moving_time) {
@@ -517,6 +588,7 @@
         }
         
         const eleGain = activitySummary.total_ascent ? activitySummary.total_ascent.toFixed(0) + ' m' : '0 m';
+        
         const avgSpd = activitySummary.avg_speed ? (activitySummary.avg_speed * 3.6).toFixed(1) : (metrics.speed.length ? (metrics.speed.reduce((a, b) => a + b, 0) / metrics.speed.length).toFixed(1) : 0);
         const maxSpd = activitySummary.max_speed ? (activitySummary.max_speed * 3.6).toFixed(1) : (metrics.speed.length ? Math.max(...metrics.speed).toFixed(1) : 0);
         const avgHr = activitySummary.avg_heart_rate ? activitySummary.avg_heart_rate.toFixed(0) : (metrics.hr.length ? (metrics.hr.reduce((a, b) => a + b, 0) / metrics.hr.length).toFixed(0) : 0);
@@ -591,21 +663,91 @@
                 if (!currentRawBuffer) {
                     return;
                 }
-                const fitParser = new FitParser({ force: true, targetUnit: 'metric', temperatureUnit: 'celsius' });
-                const data = await fitParser.parseAsync(currentRawBuffer);
-                if (!data.records || data.records.length === 0) {
+                
+                const uint8Array = new Uint8Array(currentRawBuffer);
+                
+                // Isolating stream checking verification loops to avoid cross-pointer consumption anomalies
+                const streamForCheck = Stream.fromByteArray(Array.from(uint8Array));
+                if (!Decoder.isFIT(streamForCheck)) {
+                    throw new Error('Invalid file structure: Not a valid Garmin FIT format target.');
+                }
+
+                const stream = Stream.fromByteArray(Array.from(uint8Array));
+                const decoder = new Decoder(stream);
+                
+                parsedRecords = [];
+                activitySummary = {};
+
+                const result = decoder.read();
+                const messages = result.messages;
+                
+                const rawRecords = messages?.record || messages?.records || messages?.recordMesgs || [];
+                if (rawRecords && rawRecords.length > 0) {
+                    parsedRecords = rawRecords.map((rec) => ({
+                        position_lat: rec.positionLat ? rec.positionLat * (180 / 2147483648) : undefined,
+                        position_long: rec.positionLong ? rec.positionLong * (180 / 2147483648) : undefined,
+                        altitude: rec.enhancedAltitude !== undefined ? rec.enhancedAltitude : rec.altitude,
+                        timestamp: rec.timestamp ? new Date(rec.timestamp).toISOString() : undefined,
+                        heart_rate: rec.heartRate,
+                        cadence: rec.cadence,
+                        power: rec.power,
+                        temperature: rec.temperature,
+                        speed: rec.enhancedSpeed !== undefined ? rec.enhancedSpeed : rec.speed,
+                        ...rec 
+                    }));
+                }
+                
+                const sessions = messages?.session || messages?.sessions || messages?.sessionMesgs || [];
+                if (sessions && sessions[0]) {
+                    const fields = sessions[0];
+                    activitySummary = {
+                        total_distance: fields.totalDistance,
+                        total_moving_time: fields.totalMovingTime || fields.totalTimerTime,
+                        total_ascent: fields.totalAscent,
+                        avg_speed: fields.avgSpeed,
+                        max_speed: fields.maxSpeed,
+                        avg_heart_rate: fields.avgHeartRate,
+                        max_heart_rate: fields.maxHeartRate,
+                        avg_cadence: fields.avgCadence,
+                        max_cadence: fields.maxCadence,
+                        avg_power: fields.avgPower,
+                        max_power: fields.maxPower,
+                        total_calories: fields.totalCalories || fields.calories,
+                        ...fields 
+                    };
+                }
+                
+                if (parsedRecords.length === 0) {
                     throw new Error('No data track records found in this file.');
                 }
-                parsedRecords = data.records;
                 
-                // Calculate dynamic elevation gain from FIT session fields or fallback loops
-                let computedAscent = 0;
-                if (data.sessions && data.sessions[0]) {
-                    activitySummary = data.sessions[0];
-                    computedAscent = activitySummary.total_ascent || 0;
+                if (!activitySummary.total_distance || activitySummary.total_distance === 0) {
+                    let totalDist = 0;
+                    let lastLat = null;
+                    let lastLng = null;
+                    parsedRecords.forEach((rec) => {
+                        if (rec.position_lat && rec.position_long) {
+                            if (lastLat !== null && lastLng !== null) {
+                                const R = 6371000;
+                                const dLat = (rec.position_lat - lastLat) * Math.PI / 180;
+                                const dLon = (rec.position_long - lastLng) * Math.PI / 180;
+                                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(rec.position_lat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                                totalDist += R * c;
+                            }
+                            lastLat = rec.position_lat;
+                            lastLng = rec.position_long;
+                        }
+                    });
+                    activitySummary.total_distance = totalDist;
                 }
-                
-                if (!computedAscent || computedAscent === 0) {
+
+                if (!activitySummary.total_moving_time || activitySummary.total_moving_time === 0) {
+                    activitySummary.total_moving_time = parsedRecords.length;
+                }
+
+                if (!activitySummary.total_ascent || activitySummary.total_ascent === 0) {
+                    let computedAscent = 0;
                     let lastEle = null;
                     parsedRecords.forEach((rec) => {
                         if (rec.altitude !== undefined) {
@@ -653,18 +795,34 @@
         reader.readAsArrayBuffer(file);
     });
 
+    // Handle automated layout or calculation state refreshes synchronously
+    dom.inputFormat.addEventListener('change', () => {
+        if (currentRawBuffer) parseAndProcess();
+    });
+    dom.inputEncoding.addEventListener('change', () => {
+        if (currentRawBuffer) parseAndProcess();
+    });
+    dom.outputFormat.addEventListener('change', () => {
+        if (currentRawBuffer) processAndRenderTrack();
+    });
+    dom.outputEncoding.addEventListener('change', () => {
+        if (currentRawBuffer) processAndRenderTrack();
+    });
+
     dom.refreshBtn.addEventListener('click', parseAndProcess);
 
     dom.exportBtn.addEventListener('click', () => {
-        if (!gpxContent) {
+        if (currentRawBuffer) {
+            // Re-render tracks instantly to enforce potential output selection matrix adjustments prior to export compilation
+            processAndRenderTrack();
+        }
+        if (!outputBlobData) {
             return;
         }
         const format = dom.outputFormat.value;
-        const mimeType = format === 'GPX' ? 'application/gpx+xml' : 'application/octet-stream';
         const filename = `converted_activity.${format.toLowerCase()}`;
         
-        const blob = new Blob([gpxContent], { type: `${mimeType};charset=utf-8;` });
-        const url = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(outputBlobData);
         const link = document.createElement('a');
         link.setAttribute('href', url);
         link.setAttribute('download', filename);
