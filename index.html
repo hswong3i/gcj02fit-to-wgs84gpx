@@ -503,10 +503,10 @@
                 timeCreated: new Date()
             });
 
-            // Prevent original position properties from filtering into the spreadsheet mappings
             const { positionLat, positionLong, ...cleanSummary } = activitySummary;
 
             encoder.writeMesg({
+                ...cleanSummary,
                 mesgNum: Profile.MesgNum.SESSION,
                 totalDistance: activitySummary.total_distance || 0,
                 totalTimerTime: activitySummary.total_moving_time || parsedRecords.length,
@@ -519,8 +519,7 @@
                 maxCadence: activitySummary.max_cadence,
                 avgPower: activitySummary.avg_power,
                 maxPower: activitySummary.max_power,
-                totalCalories: totalCalories,
-                ...cleanSummary
+                totalCalories: totalCalories
             });
             
             encoder.writeMesg({
@@ -552,10 +551,10 @@
 
                 const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
 
-                // Destructure and drop original unmapped decoded position keys from the rest of the target attributes sequence map
                 const { positionLat: nativeLat, positionLong: nativeLong, ...cleanRec } = rec;
                 
                 encoder.writeMesg({
+                    ...cleanRec,
                     mesgNum: Profile.MesgNum.RECORD,
                     positionLat: Math.round(outLat * (2147483648 / 180)),
                     positionLong: Math.round(outLng * (2147483648 / 180)),
@@ -566,8 +565,7 @@
                     power: rec.power,
                     temperature: rec.temperature,
                     speed: rec.speed,
-                    distance: accumulatedDistance,
-                    ...cleanRec
+                    distance: accumulatedDistance
                 });
             });
             

@@ -26,8 +26,10 @@ download converted output file to local in (.FIT / .GPX) + (GCJ02 / BD09 / WGS84
 
 # Input
 support source file upload from local
-support source file format: .FIT (default) / .GPX
-support source file encoding GCJ02 (default) / BD09 / WGS84
+support source file format: .FIT / .GPX
+support source file encoding GCJ02 / BD09 / WGS84
+source file format default with .FIT
+source file encoding default with GCJ02
 add refresh button for uploaded source file
 IF (source file upload change) OR (source file format change) OR (source file encoding change) THEN
     ajax refresh preview
@@ -69,8 +71,10 @@ default map center to Hong Kong
 
 # Output
 support output file download to local
-support output file format: .FIT (default) / .GPX
-support output file encoding: WGS84 (default) / GCJ02 / BD09
+support output file format: .FIT / .GPX
+support output file encoding: GCJ02 / BD09 / WGS84
+output file format default with .FIT
+output file encoding default with WGC84
 IF (output file format is .FIT) THEN
     encode output file with "@garmin/fitsdk@21.208.0"
     encode output file with FIT Profile
