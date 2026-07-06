@@ -1,6 +1,6 @@
-# FIT to GPX Converter & Map Viewer
+# FIT / TCX / GPX Converter & Map Viewer
 
-Upload your Magene C606 / C706 .FIT file to view data and export to standard GPX.
+Upload your **BROKEN** Magene C606 / C706 .FIT + GCJ02 file and re-export to standard .FIT + WGS84:
 
 - Support multi-directional file format convert between .FIT / .TCX / .GPX
 - Support multi-directional GPS encoding convert between GCJ02 / BD09 / WGS84
@@ -10,9 +10,11 @@ See <https://hswong3i.github.io/gcj02fit-to-wgs84gpx/>
 
 ## Why?
 
-Since recent firmware upgrade, the GPS data now encoded with GCJ02 format for Hong Kong, so it is not usable with Strava which expecting GPS data encoded with standard WGS84 format.
+Since recent Magene C606 / C706 firmware upgrade:
 
-Magene also remove the auto sync and upload .FIT (with auto GCJ02 to WGS84 fixes) files to Strava.
+- GPS data encoded into GCJ02 for Hong Kong
+- But Strava expecting GPS data encoded with standard WGS84 format
+- Magene also remove the auto sync and upload .FIT (with auto GCJ02 to WGS84 fixes) files to Strava
 
 Well~ Don't Wait, Just Fix It!
 
