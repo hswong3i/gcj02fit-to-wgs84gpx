@@ -13,17 +13,10 @@
 
 ## Libraries
 
-- layout design with "<bootstrap@5.3.8>"
-- map with "<leaflet@1.9.4>"
-- line graph with "<chart.js@4.5.1>"
-- .FIT decode / encode with "@garmin/<fitsdk@21.208.0>"
-
-## Fixes
-
-- fix "@garmin/<fitsdk@21.208.0>" with <https://github.com/garmin/fit-javascript-sdk/tree/21.208.0>
-- fix "Uncaught TypeError: encoder.write is not a function"
-- fix "Error: Invalid file structure: Not a valid Garmin FIT format target."
-- fix "Uncaught TypeError: can't access property "slice", stream.buf is undefined"
+- layout design with `bootstrap@5.3.8`
+- map with `leaflet@1.9.4`
+- line graph with `chart.js@4.5.1`
+- .FIT decode / encode with `@garmin/fitsdk@21.208.0`
 
 # Logic
 
@@ -54,7 +47,7 @@
     FI
 
     IF (source file format is .FIT) THEN
-        decode source file with "@garmin/fitsdk@21.208.0"
+        decode source file with `@garmin/fitsdk@21.208.0`
         decode source file with FIT Profile
         implement decoder as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#decoder
         use `const decoder = new Decoder(stream);`
@@ -112,7 +105,7 @@
 ## Conditional
 
     IF (output file format is .FIT) THEN
-        encode output file with "@garmin/fitsdk@21.208.0"
+        encode output file with `@garmin/fitsdk@21.208.0`
         encode output file with FIT Profile
         implement create stream as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#creating-streams
         implement encoder as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#encoder
