@@ -63,40 +63,40 @@
 
 ## Keep
 
-    - keep "Speed"
-    - keep "Heart Rate"
-    - keep "Cadence"
-    - keep "Power"
-    - keep "Calories"
-    - keep "Temperature"
-    - keep "Elevation"
-    - keep all message type and attributes, except converted file encoding
+- keep "Speed"
+- keep "Heart Rate"
+- keep "Cadence"
+- keep "Power"
+- keep "Calories"
+- keep "Temperature"
+- keep "Elevation"
+- keep all message type and attributes, except converted file encoding
 
 ## Dashbaord
 
-    - display "Activity Date"
-    - display "Total Distance", "Moving Time", "Elevation"
-    - display "Average Speed", "Max Speed"
-    - display "Average Heart Rate", "Max Heart Rate"
-    - display "Average Cadence", "Max Cadence"
-    - display "Average Power", "Max Power"
-    - display "Average Temperature", "Max Temperature"
-    - not display "Calories"
-    - include zero records for average calculation
+- display "Activity Date"
+- display "Total Distance", "Moving Time", "Elevation"
+- display "Average Speed", "Max Speed"
+- display "Average Heart Rate", "Max Heart Rate"
+- display "Average Cadence", "Max Cadence"
+- display "Average Power", "Max Power"
+- display "Average Temperature", "Max Temperature"
+- not display "Calories"
+- include zero records for average calculation
 
 ## Map
 
-    - display preview file in map
-    - default map center to Hong Kong
+- display preview file in map
+- default map center to Hong Kong
 
 ## Line Graph
 
-    - display "Speed" in line graph
-    - display "Heart Rate" in line graph
-    - display "Cadence" in line graph
-    - display "Power" in line graph
-    - display "Elevation" in line graph
-    - display "Temperature" in line graph
+- display "Speed" in line graph
+- display "Heart Rate" in line graph
+- display "Cadence" in line graph
+- display "Power" in line graph
+- display "Elevation" in line graph
+- display "Temperature" in line graph
 
 # Output
 
