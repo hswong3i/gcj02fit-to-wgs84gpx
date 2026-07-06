@@ -10,21 +10,24 @@
 - synchronize layout design
 - check with ESLint
 - check with Stylelint
+- check with Idempotency
 
 ## Libraries
 
-- layout design with `bootstrap@5.3.8`
-- map with `leaflet@1.9.4`
-- line graph with `chart.js@4.5.1`
-- .FIT decode / encode with `@garmin/fitsdk@21.208.0`
+- use `@garmin/fitsdk@21.208.0`
+- use `bootstrap@5.3.8`
+- use `chart.js@4.5.1`
+- use `github-fork-ribbon-css@0.2.3`
+- use `leaflet@1.9.4`
 
 # Logic
 
 ## Functional
 
 - create a "index.html" with javascript
+- display "Fork me on GitHub" to <https://github.com/hswong3i/gcj02fit-to-wgs84gpx>
 - upload source file from local in (.FIT / .GPX) + (GCJ02 / BD09 / WGS84)
-- always convert source file into preview file in .GPX + WGS84
+- always convert source file into preview file as format and encoding selected
 - display preview file with dashboard / map / line graph
 - always convert preview file into output file as format and encoding selected
 - download converted output file to local in (.FIT / .GPX) + (GCJ02 / BD09 / WGS84)
@@ -64,9 +67,9 @@
 - keep "Calories"
 - keep "Temperature"
 - keep "Elevation"
-- keep all message type and attributes, except converted file encoding
+- keep all message type and attributes, except converted preview file encoding
 
-## Dashbaord
+## Dashboard
 
 - display "Activity Date"
 - display "Total Distance", "Moving Time", "Elevation"
@@ -100,14 +103,14 @@
 - support output file format: .FIT / .GPX
 - support output file encoding: GCJ02 / BD09 / WGS84
 - output file format default with .FIT
-- output file encoding default with WGC84
+- output file encoding default with WGS84
 
 ## Conditional
 
     IF (output file format is .FIT) THEN
         encode output file with `@garmin/fitsdk@21.208.0`
         encode output file with FIT Profile
-        implement create stream as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#creating-streams
+        implement streamless buffer creation as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#creating-streams
         implement encoder as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#encoder
         use `const encoder = new Encoder();`
         use `encoder.writeMesg()`

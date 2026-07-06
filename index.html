@@ -423,7 +423,6 @@
 
     // --- Conversion Engine Framework Process ---
     const processAndRenderTrack = () => {
-        const latLngs = [];
         const inputEncoding = dom.inputEncoding.value;
         const outputFormat = dom.outputFormat.value;
         const outputEncoding = dom.outputEncoding.value;
@@ -448,6 +447,7 @@
     <trkseg>`;
 
         const metrics = { speed: [], hr: [], cad: [], pwr: [], ele: [], temp: [] };
+        const latLngs = [];
 
         parsedRecords.forEach((record) => {
             const hr = record.heart_rate !== undefined ? record.heart_rate : 0;
@@ -587,16 +587,16 @@
         
         const eleGain = activitySummary.total_ascent ? activitySummary.total_ascent.toFixed(0) + ' m' : '0 m';
         
-        const avgSpd = activitySummary.avg_speed ? (activitySummary.avg_speed * 3.6).toFixed(1) : (metrics.speed.length ? (metrics.speed.reduce((a, b) => a + b, 0) / metrics.speed.length).toFixed(1) : 0);
-        const maxSpd = activitySummary.max_speed ? (activitySummary.max_speed * 3.6).toFixed(1) : (metrics.speed.length ? Math.max(...metrics.speed).toFixed(1) : 0);
-        const avgHr = activitySummary.avg_heart_rate ? activitySummary.avg_heart_rate.toFixed(0) : (metrics.hr.length ? (metrics.hr.reduce((a, b) => a + b, 0) / metrics.hr.length).toFixed(0) : 0);
-        const maxHr = activitySummary.max_heart_rate ? activitySummary.max_heart_rate.toFixed(0) : (metrics.hr.length ? Math.max(...metrics.hr).toFixed(0) : 0);
-        const avgCad = activitySummary.avg_cadence ? activitySummary.avg_cadence.toFixed(0) : (metrics.cad.length ? (metrics.cad.reduce((a, b) => a + b, 0) / metrics.cad.length).toFixed(0) : 0);
-        const maxCad = activitySummary.max_cadence ? activitySummary.max_cadence.toFixed(0) : (metrics.cad.length ? Math.max(...metrics.cad).toFixed(0) : 0);
-        const avgPwr = activitySummary.avg_power ? activitySummary.avg_power.toFixed(0) : (metrics.pwr.length ? (metrics.pwr.reduce((a, b) => a + b, 0) / metrics.pwr.length).toFixed(0) : 0);
-        const maxPwr = activitySummary.max_power ? activitySummary.max_power.toFixed(0) : (metrics.pwr.length ? Math.max(...metrics.pwr).toFixed(0) : 0);
-        const avgTmp = metrics.temp.length ? (metrics.temp.reduce((a, b) => a + b, 0) / metrics.temp.length).toFixed(1) : 0;
-        const maxTmp = metrics.temp.length ? Math.max(...metrics.temp).toFixed(1) : 0;
+        const avgSpd = metrics.speed.length ? (metrics.speed.reduce((a, b) => a + b, 0) / metrics.speed.length).toFixed(1) : '0.0';
+        const maxSpd = metrics.speed.length ? Math.max(...metrics.speed).toFixed(1) : '0.0';
+        const avgHr = metrics.hr.length ? (metrics.hr.reduce((a, b) => a + b, 0) / metrics.hr.length).toFixed(0) : '0';
+        const maxHr = metrics.hr.length ? Math.max(...metrics.hr).toFixed(0) : '0';
+        const avgCad = metrics.cad.length ? (metrics.cad.reduce((a, b) => a + b, 0) / metrics.cad.length).toFixed(0) : '0';
+        const maxCad = metrics.cad.length ? Math.max(...metrics.cad).toFixed(0) : '0';
+        const avgPwr = metrics.pwr.length ? (metrics.pwr.reduce((a, b) => a + b, 0) / metrics.pwr.length).toFixed(0) : '0';
+        const maxPwr = metrics.pwr.length ? Math.max(...metrics.pwr).toFixed(0) : '0';
+        const avgTmp = metrics.temp.length ? (metrics.temp.reduce((a, b) => a + b, 0) / metrics.temp.length).toFixed(1) : '0.0';
+        const maxTmp = metrics.temp.length ? Math.max(...metrics.temp).toFixed(1) : '0.0';
 
         dom.statDistance.innerText = totalDist;
         dom.statMovingTime.innerText = movingTimeStr;
