@@ -24,20 +24,20 @@
 
 ## Functional
 
-- create a "index.html" with javascript
+- create a `index.html` with javascript
 - display "Fork me on GitHub" to <https://github.com/hswong3i/gcj02fit-to-wgs84gpx>
-- upload source file from local in (.FIT / .GPX) + (GCJ02 / BD09 / WGS84)
+- upload source file from local in (.FIT / .TCX / .GPX) + (GCJ02 / BD09 / WGS84)
 - always convert source file into preview file as format and encoding selected
 - display preview file with dashboard / map / line graph
 - always convert preview file into output file as format and encoding selected
-- download converted output file to local in (.FIT / .GPX) + (GCJ02 / BD09 / WGS84)
+- download converted output file to local in (.FIT / .TCX / .GPX) + (GCJ02 / BD09 / WGS84)
 
 # Input
 
 ## Functional
 
 - support source file upload from local
-- support source file format: .FIT / .GPX
+- support source file format: .FIT / .TCX / .GPX
 - support source file encoding GCJ02 / BD09 / WGS84
 - source file format default with .FIT
 - source file encoding default with GCJ02
@@ -100,7 +100,7 @@
 ## Functional
 
 - support output file download to local
-- support output file format: .FIT / .GPX
+- support output file format: .FIT / .TCX / .GPX
 - support output file encoding: GCJ02 / BD09 / WGS84
 - output file format default with .FIT
 - output file encoding default with WGS84

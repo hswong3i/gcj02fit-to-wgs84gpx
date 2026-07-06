@@ -2,9 +2,9 @@
 
 Upload your Magene C606 / C706 .FIT file to view data and export to standard GPX.
 
-- Support bi-directional file format convert between .FIT / .GPX
-- Support tri-directional GPS encoding convert between GCJ02 / BD09 / WGS84
-- Support live preview in .GPX and WGS84 before export file
+- Support multi-directional file format convert between .FIT / .TCX / .GPX
+- Support multi-directional GPS encoding convert between GCJ02 / BD09 / WGS84
+- Support live preview before export file
 
 See <https://hswong3i.github.io/gcj02fit-to-wgs84gpx/>
 

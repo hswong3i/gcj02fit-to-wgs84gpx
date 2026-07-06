@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIT to GPX Converter & Map Viewer</title>
+    <title>FIT / TCX / GPX Converter & Map Viewer</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-fork-ribbon-css@0.2.3/gh-fork-ribbon.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
@@ -25,9 +25,9 @@
 
 <div class="container my-5">
     <div class="card shadow p-4 bg-white rounded">
-        <h2 class="mb-2 text-dark border-bottom pb-2">FIT / GPX Converter (GCJ02 / BD09 / WGS84)</h2>
-        <p class="text-secondary small mb-4">Upload your Magene C606 .fit file to view data and export to standard GPX.</p>
-        
+        <h2 class="mb-2 text-dark border-bottom pb-2">FIT / TCX / GPX Converter & Map Viewer</h2>
+        <p class="text-secondary small mb-4">Upload your source file to view telemetry analytics data and export with alternate tracking layouts.</p>
+
         <div class="row g-3 mb-4 bg-light p-3 border rounded">
             <div class="col-md-6 border-end">
                 <h6 class="fw-bold text-secondary mb-2">Input Settings</h6>
@@ -36,6 +36,7 @@
                         <label class="small fw-semibold text-muted" for="inputFormat">Format</label>
                         <select id="inputFormat" class="form-select form-select-sm">
                             <option value="FIT" selected>.FIT</option>
+                            <option value="TCX">.TCX</option>
                             <option value="GPX">.GPX</option>
                         </select>
                     </div>
@@ -56,6 +57,7 @@
                         <label class="small fw-semibold text-muted" for="outputFormat">Format</label>
                         <select id="outputFormat" class="form-select form-select-sm">
                             <option value="FIT" selected>.FIT</option>
+                            <option value="TCX">.TCX</option>
                             <option value="GPX">.GPX</option>
                         </select>
                     </div>
@@ -73,7 +75,7 @@
 
         <div class="row g-3 align-items-center mb-4">
             <div class="col-md-4">
-                <input type="file" class="form-control" id="fitFile" accept=".fit,.gpx" />
+                <input type="file" class="form-control" id="fitFile" accept=".fit,.tcx,.gpx" />
             </div>
             <div class="col-md-2">
                 <button id="refreshBtn" class="btn btn-secondary w-100 fw-bold" disabled>Refresh</button>
@@ -162,7 +164,6 @@
 <script type="module">
     import { Decoder, Encoder, Stream, Profile } from 'https://cdn.jsdelivr.net/npm/@garmin/fitsdk@21.208.0/+esm';
 
-    // --- Dynamic Internal Cache Elements Mapping ---
     const dom = {
         fitFile: document.getElementById('fitFile'),
         refreshBtn: document.getElementById('refreshBtn'),
@@ -186,25 +187,17 @@
         statTemperature: document.getElementById('statTemperature')
     };
 
-    // --- State Vectors Vector Block ---
     let map;
     let parsedRecords = [];
     let activitySummary = {};
     let outputBlobData = null;
-    let gpxContent = '';
     let currentRawBuffer = null;
     let currentRawText = null;
 
     const chartInstances = {
-        speed: null,
-        heartRate: null,
-        power: null,
-        cadence: null,
-        elevation: null,
-        temperature: null
+        speed: null, heartRate: null, power: null, cadence: null, elevation: null, temperature: null
     };
 
-    // --- Initialize the Leaflet Map centered on Hong Kong ---
     const initMap = () => {
         map = L.map('map').setView([22.3193, 114.1694], 10);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -213,7 +206,6 @@
     };
     initMap();
 
-    // --- GCJ-02 / BD09 / WGS84 Deviation Correction Matrices ---
     const EE = 0.00669342162296594323;
     const AA = 6378245.0;
     const X_PI = 3.14159265358979324 * 3000.0 / 180.0;
@@ -237,9 +229,7 @@
     };
 
     const gcj02ToWgs84 = (lng, lat) => {
-        if (outOfChina(lng, lat)) {
-            return [lng, lat];
-        }
+        if (outOfChina(lng, lat)) return [lng, lat];
         let dlat = transformLat(lng - 105.0, lat - 35.0);
         let dlng = transformLng(lng - 105.0, lat - 35.0);
         const radlat = lat / 180.0 * Math.PI;
@@ -265,9 +255,7 @@
     };
 
     const wgs84ToGcj02 = (lng, lat) => {
-        if (outOfChina(lng, lat)) {
-            return [lng, lat];
-        }
+        if (outOfChina(lng, lat)) return [lng, lat];
         let dlat = transformLat(lng - 105.0, lat - 35.0);
         let dlng = transformLng(lng - 105.0, lat - 35.0);
         const radlat = lat / 180.0 * Math.PI;
@@ -302,13 +290,11 @@
         return [lng, lat];
     };
 
-    // --- Communication Status Box Logger ---
     const showStatus = (msg, type) => {
         dom.statusMessage.innerText = msg;
         dom.statusMessage.className = `fw-bold small ${type}`;
     };
 
-    // --- Graph Display Generation Pipeline Engine ---
     const createTelemetryChart = (canvasId, label, data, color, unit) => {
         const ctx = document.getElementById(canvasId).getContext('2d');
         return new Chart(ctx, {
@@ -333,37 +319,25 @@
                     legend: { display: true, position: 'top' },
                     tooltip: { mode: 'index', intersect: false }
                 },
-                scales: {
-                    x: { display: false },
-                    y: { beginAtZero: true }
-                }
+                scales: { x: { display: false }, y: { beginAtZero: true } }
             }
         });
     };
 
-    // --- Raw GPX Document String Tracker Parser ---
     const parseGpxToRecords = (gpxText) => {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(gpxText, 'text/xml');
         const trkpts = xmlDoc.getElementsByTagName('trkpt');
-        if (trkpts.length === 0) {
-            throw new Error('No GPX track segments or elements located.');
-        }
+        if (trkpts.length === 0) throw new Error('No GPX track segments located.');
 
         parsedRecords = [];
-        let totalDist = 0;
-        let totalAscent = 0;
-        let totalCalories = 0;
-        let lastLat = null;
-        let lastLng = null;
-        let lastEle = null;
+        let totalDist = 0, totalAscent = 0, totalCalories = 0;
+        let lastLat = null, lastLng = null, lastEle = null;
 
         const descNode = xmlDoc.getElementsByTagName('desc')[0];
         if (descNode && descNode.textContent.includes('Calories:')) {
             const match = descNode.textContent.match(/Calories:\s*([\d.]+)/);
-            if (match) {
-                totalCalories = parseFloat(match[1]);
-            }
+            if (match) totalCalories = parseFloat(match[1]);
         }
 
         for (let i = 0; i < trkpts.length; i++) {
@@ -379,385 +353,272 @@
             const spdNode = pt.getElementsByTagName('speed')[0] || pt.getElementsByTagName('gpxtpx:speed')[0];
 
             const ele = eleNode ? parseFloat(eleNode.textContent) : undefined;
-
             const record = {
-                position_lat: lat,
-                position_long: lng,
-                altitude: ele,
+                position_lat: lat, position_long: lng, altitude: ele,
                 timestamp: timeNode ? timeNode.textContent : undefined,
-                heart_rate: hrNode ? parseInt(hrNode.textContent, 10) : undefined,
-                cadence: cadNode ? parseInt(cadNode.textContent, 10) : undefined,
-                power: pwrNode ? parseInt(pwrNode.textContent, 10) : undefined,
-                temperature: tmpNode ? parseFloat(tmpNode.textContent) : undefined,
-                speed: spdNode ? parseFloat(spdNode.textContent) : undefined
+                heart_rate: hrNode ? parseInt(hrNode.textContent, 10) : 0,
+                cadence: cadNode ? parseInt(cadNode.textContent, 10) : 0,
+                power: pwrNode ? parseInt(pwrNode.textContent, 10) : 0,
+                temperature: tmpNode ? parseFloat(tmpNode.textContent) : 0,
+                speed: spdNode ? parseFloat(spdNode.textContent) : 0
             };
 
             if (lastLat !== null && lastLng !== null) {
                 const R = 6371000;
                 const dLat = (lat - lastLat) * Math.PI / 180;
                 const dLon = (lng - lastLng) * Math.PI / 180;
-                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(lastLat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                totalDist += R * c;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                totalDist += R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
             }
+            if (ele !== undefined && lastEle !== null && ele > lastEle) totalAscent += (ele - lastEle);
 
-            if (ele !== undefined && lastEle !== null && ele > lastEle) {
-                totalAscent += (ele - lastEle);
-            }
-
-            lastLat = lat;
-            lastLng = lng;
-            if (ele !== undefined) {
-                lastEle = ele;
-            }
+            lastLat = lat; lastLng = lng; if (ele !== undefined) lastEle = ele;
             parsedRecords.push(record);
         }
 
-        activitySummary = {
-            total_distance: totalDist,
-            total_moving_time: parsedRecords.length,
-            total_ascent: totalAscent,
-            total_calories: totalCalories
-        };
+        activitySummary = { total_distance: totalDist, total_moving_time: parsedRecords.length, total_ascent: totalAscent, total_calories: totalCalories };
     };
 
-    // --- Conversion Engine Framework Process ---
+    const parseTcxToRecords = (tcxText) => {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(tcxText, 'text/xml');
+        const trackpoints = xmlDoc.getElementsByTagName('Trackpoint');
+        if (trackpoints.length === 0) throw new Error('No TCX track points located.');
+
+        parsedRecords = [];
+        let totalDist = 0, totalAscent = 0, totalCalories = 0;
+        let lastLat = null, lastLng = null, lastEle = null;
+
+        const caloriesNode = xmlDoc.getElementsByTagName('Calories')[0];
+        if (caloriesNode) totalCalories = parseFloat(caloriesNode.textContent);
+
+        for (let i = 0; i < trackpoints.length; i++) {
+            const pt = trackpoints[i];
+            const latNode = pt.getElementsByTagName('LatitudeDegrees')[0];
+            const lngNode = pt.getElementsByTagName('LongitudeDegrees')[0];
+            if (!latNode || !lngNode) continue;
+
+            const lat = parseFloat(latNode.textContent);
+            const lng = parseFloat(lngNode.textContent);
+            const eleNode = pt.getElementsByTagName('AltitudeMeters')[0];
+            const timeNode = pt.getElementsByTagName('Time')[0];
+            const hrNode = pt.getElementsByTagName('HeartRateBpm')[0]?.getElementsByTagName('Value')[0];
+            const cadNode = pt.getElementsByTagName('Cadence')[0];
+            const pwrNode = pt.getElementsByTagName('Watts')[0];
+
+            const ele = eleNode ? parseFloat(eleNode.textContent) : undefined;
+            const record = {
+                position_lat: lat, position_long: lng, altitude: ele,
+                timestamp: timeNode ? timeNode.textContent : undefined,
+                heart_rate: hrNode ? parseInt(hrNode.textContent, 10) : 0,
+                cadence: cadNode ? parseInt(cadNode.textContent, 10) : 0,
+                power: pwrNode ? parseInt(pwrNode.textContent, 10) : 0,
+                temperature: 0, speed: 0
+            };
+
+            if (lastLat !== null && lastLng !== null) {
+                const R = 6371000;
+                const dLat = (lat - lastLat) * Math.PI / 180;
+                const dLon = (lng - lastLng) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                totalDist += R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+            }
+            if (ele !== undefined && lastEle !== null && ele > lastEle) totalAscent += (ele - lastEle);
+
+            lastLat = lat; lastLng = lng; if (ele !== undefined) lastEle = ele;
+            parsedRecords.push(record);
+        }
+
+        activitySummary = { total_distance: totalDist, total_moving_time: parsedRecords.length, total_ascent: totalAscent, total_calories: totalCalories };
+    };
+
+    const generateGpxOutput = (inputEncoding, outputEncoding, metrics, latLngs) => {
+        const startTime = parsedRecords[0]?.timestamp ? new Date(parsedRecords[0].timestamp).toISOString() : new Date().toISOString();
+        const totalCalories = activitySummary.total_calories || 0;
+
+        let gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="FitToGpxWeb" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">\n  <metadata>\n    <time>${startTime}</time>\n    <desc>Calories: ${totalCalories} kcal</desc>\n  </metadata>\n  <trk>\n    <name>Converted Track</name>\n    <trkseg>`;
+
+        parsedRecords.forEach((record) => {
+            if (!record.position_lat || !record.position_long) return;
+            const [wgsLng, wgsLat] = toWgs84(record.position_long, record.position_lat, inputEncoding);
+            latLngs.push([wgsLat, wgsLng]);
+            const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
+
+            gpx += `\n      <trkpt lat="${outLat.toFixed(6)}" lon="${outLng.toFixed(6)}">${record.altitude !== undefined ? `\n        <ele>${record.altitude.toFixed(1)}</ele>` : ''}${record.timestamp ? `\n        <time>${new Date(record.timestamp).toISOString()}</time>` : ''}\n        <extensions>\n          <power>${record.power || 0}</power>\n          <gpxtpx:TrackPointExtension>\n            <gpxtpx:hr>${record.heart_rate || 0}</gpxtpx:hr>\n            <gpxtpx:cad>${record.cadence || 0}</gpxtpx:cad>\n            <gpxtpx:atemp>${record.temperature || 0}</gpxtpx:atemp>\n            <gpxtpx:speed>${record.speed || 0}</gpxtpx:speed>\n          </gpxtpx:TrackPointExtension>\n        </extensions>\n      </trkpt>`;
+        });
+        gpx += `\n    </trkseg>\n  </trk>\n</gpx>`;
+        return new Blob([gpx], { type: 'application/gpx+xml;charset=utf-8;' });
+    };
+
+    const generateTcxOutput = (inputEncoding, outputEncoding, latLngs) => {
+        const startTime = parsedRecords[0]?.timestamp ? new Date(parsedRecords[0].timestamp).toISOString() : new Date().toISOString();
+        let tcx = `<?xml version="1.0" encoding="UTF-8"?>\n<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">\n  <Activities>\n    <Activity Sport="Biking">\n      <Id>${startTime}</Id>\n      <Lap StartTime="${startTime}">\n        <TotalTimeSeconds>${activitySummary.total_moving_time || parsedRecords.length}</TotalTimeSeconds>\n        <DistanceMeters>${activitySummary.total_distance || 0}</DistanceMeters>\n        <Calories>${activitySummary.total_calories || 0}</Calories>\n        <Track>`;
+
+        parsedRecords.forEach((record) => {
+            if (!record.position_lat || !record.position_long) return;
+            const [wgsLng, wgsLat] = toWgs84(record.position_long, record.position_lat, inputEncoding);
+            latLngs.push([wgsLat, wgsLng]);
+            const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
+
+            tcx += `\n          <Trackpoint>${record.timestamp ? `\n            <Time>${new Date(record.timestamp).toISOString()}</Time>` : ''}\n            <Position>\n              <LatitudeDegrees>${outLat.toFixed(6)}</LatitudeDegrees>\n              <LongitudeDegrees>${outLng.toFixed(6)}</LongitudeDegrees>\n            </Position>${record.altitude !== undefined ? `\n            <AltitudeMeters>${record.altitude.toFixed(1)}</AltitudeMeters>` : ''}\n            <HeartRateBpm>\n              <Value>${record.heart_rate || 0}</Value>\n            </HeartRateBpm>\n            <Cadence>${record.cadence || 0}</Cadence>\n            <Extensions>\n              <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">\n                <Watts>${record.power || 0}</Watts>\n              </TPX>\n            </Extensions>\n          </Trackpoint>`;
+        });
+        tcx += `\n        </Track>\n      </Lap>\n    </Activity>\n  </Activities>\n</TrainingCenterDatabase>`;
+        return new Blob([tcx], { type: 'application/vn.garmin.tcx+xml;charset=utf-8;' });
+    };
+
+    const generateFitOutput = (inputEncoding, outputEncoding, latLngs) => {
+        const encoder = new Encoder();
+        encoder.writeMesg({ mesgNum: Profile.MesgNum.FILE_ID, type: "activity", manufacturer: "development", product: 1, timeCreated: new Date() });
+
+        const { positionLat, positionLong, ...cleanSummary } = activitySummary;
+        encoder.writeMesg({
+            ...cleanSummary, mesgNum: Profile.MesgNum.SESSION,
+            totalDistance: activitySummary.total_distance || 0,
+            totalTimerTime: activitySummary.total_moving_time || parsedRecords.length,
+            totalMovingTime: activitySummary.total_moving_time || parsedRecords.length,
+            totalCalories: activitySummary.total_calories || 0
+        });
+        encoder.writeMesg({ mesgNum: Profile.MesgNum.ACTIVITY, totalTimerTime: activitySummary.total_moving_time || parsedRecords.length, numSessions: 1, type: "manual", event: "activity" });
+
+        let accumDist = 0, lastLat = null, lastLng = null;
+        parsedRecords.forEach((rec) => {
+            if (!rec.position_long || !rec.position_lat) return;
+            const [wgsLng, wgsLat] = toWgs84(rec.position_long, rec.position_lat, inputEncoding);
+            if (lastLat !== null && lastLng !== null) {
+                const R = 6371000;
+                const dLat = (wgsLat - lastLat) * Math.PI / 180;
+                const dLon = (wgsLng - lastLng) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(wgsLat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                accumDist += R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+            }
+            lastLat = wgsLat; lastLng = wgsLng;
+            latLngs.push([wgsLat, wgsLng]);
+
+            const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
+            const { positionLat: nLat, positionLong: nLng, ...cleanRec } = rec;
+            encoder.writeMesg({
+                ...cleanRec, mesgNum: Profile.MesgNum.RECORD,
+                positionLat: Math.round(outLat * (2147483648 / 180)),
+                positionLong: Math.round(outLng * (2147483648 / 180)),
+                altitude: rec.altitude, timestamp: rec.timestamp ? new Date(rec.timestamp) : new Date(),
+                heartRate: rec.heart_rate, cadence: rec.cadence, power: rec.power, temperature: rec.temperature, speed: rec.speed, distance: accumDist
+            });
+        });
+        return new Blob([encoder.close()], { type: 'application/octet-stream' });
+    };
+
     const processAndRenderTrack = () => {
         const inputEncoding = dom.inputEncoding.value;
         const outputFormat = dom.outputFormat.value;
         const outputEncoding = dom.outputEncoding.value;
-        
-        const startTime = parsedRecords[0] && parsedRecords[0].timestamp ? new Date(parsedRecords[0].timestamp).toISOString() : new Date().toISOString();
-        const totalCalories = activitySummary.total_calories || activitySummary.calories || 0;
 
-        if (parsedRecords[0] && parsedRecords[0].timestamp) {
+        if (parsedRecords[0]?.timestamp) {
             const dateObj = new Date(parsedRecords[0].timestamp);
             dom.activityDateSpan.innerText = `${dateObj.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} ${dateObj.toLocaleTimeString()}`;
             dom.activityDateContainer.classList.remove('d-none');
         }
 
-        gpxContent = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="FitToGpxWeb" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">
-  <metadata>
-    <time>${startTime}</time>
-    <desc>Calories: ${totalCalories} kcal</desc>
-  </metadata>
-  <trk>
-    <name>Converted Activity Track</name>
-    <trkseg>`;
-
         const metrics = { speed: [], hr: [], cad: [], pwr: [], ele: [], temp: [] };
         const latLngs = [];
 
         parsedRecords.forEach((record) => {
-            const hr = record.heart_rate !== undefined ? record.heart_rate : 0;
-            const cad = record.cadence !== undefined ? record.cadence : 0;
-            const temp = record.temperature !== undefined ? record.temperature : 0;
-            const speed = record.speed !== undefined ? record.speed : 0;
-            const ele = record.altitude !== undefined ? record.altitude : 0;
-            const power = record.power ?? record.accumulated_power ?? record.active_power ?? 0;
-
-            metrics.speed.push(speed * 3.6);
-            metrics.hr.push(hr);
-            metrics.cad.push(cad);
-            metrics.pwr.push(power);
-            metrics.ele.push(ele);
-            metrics.temp.push(temp);
-
-            if (record.position_lat && record.position_long) {
-                const [wgsLng, wgsLat] = toWgs84(record.position_long, record.position_lat, inputEncoding);
-                latLngs.push([wgsLat, wgsLng]);
-
-                const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
-
-                gpxContent += `
-      <trkpt lat="${outLat.toFixed(6)}" lon="${outLng.toFixed(6)}">
-        ${record.altitude !== undefined ? `<ele>${record.altitude.toFixed(1)}</ele>` : ''}
-        ${record.timestamp ? `<time>${new Date(record.timestamp).toISOString()}</time>` : ''}
-        <extensions>
-          <power>${power}</power>
-          <gpxtpx:TrackPointExtension>
-            <gpxtpx:hr>${hr}</gpxtpx:hr>
-            <gpxtpx:cad>${cad}</gpxtpx:cad>
-            <gpxtpx:atemp>${temp}</gpxtpx:atemp>
-            <gpxtpx:speed>${speed}</gpxtpx:speed>
-          </gpxtpx:TrackPointExtension>
-        </extensions>
-      </trkpt>`;
-            }
+            metrics.speed.push((record.speed !== undefined && record.speed !== null ? record.speed : 0) * 3.6);
+            metrics.hr.push(record.heart_rate !== undefined && record.heart_rate !== null ? record.heart_rate : 0);
+            metrics.cad.push(record.cadence !== undefined && record.cadence !== null ? record.cadence : 0);
+            metrics.pwr.push(record.power !== undefined && record.power !== null ? record.power : 0);
+            metrics.ele.push(record.altitude !== undefined && record.altitude !== null ? record.altitude : 0);
+            metrics.temp.push(record.temperature !== undefined && record.temperature !== null ? record.temperature : 0);
         });
 
-        gpxContent += `
-    </trkseg>
-  </trk>
-</gpx>`;
+        if (outputFormat === 'FIT') outputBlobData = generateFitOutput(inputEncoding, outputEncoding, latLngs);
+        else if (outputFormat === 'TCX') outputBlobData = generateTcxOutput(inputEncoding, outputEncoding, latLngs);
+        else outputBlobData = generateGpxOutput(inputEncoding, outputEncoding, metrics, latLngs);
 
-        if (outputFormat === 'FIT') {
-            const encoder = new Encoder(); 
-            
-            encoder.writeMesg({
-                mesgNum: Profile.MesgNum.FILE_ID,
-                type: "activity",
-                manufacturer: "development",
-                product: 1,
-                timeCreated: new Date()
-            });
-
-            const { positionLat, positionLong, ...cleanSummary } = activitySummary;
-
-            encoder.writeMesg({
-                ...cleanSummary,
-                mesgNum: Profile.MesgNum.SESSION,
-                totalDistance: activitySummary.total_distance || 0,
-                totalTimerTime: activitySummary.total_moving_time || parsedRecords.length,
-                totalMovingTime: activitySummary.total_moving_time || parsedRecords.length,
-                avgSpeed: activitySummary.avg_speed || 0,
-                maxSpeed: activitySummary.max_speed || 0,
-                avgHeartRate: activitySummary.avg_heart_rate,
-                maxHeartRate: activitySummary.max_heart_rate,
-                avgCadence: activitySummary.avg_cadence,
-                maxCadence: activitySummary.max_cadence,
-                avgPower: activitySummary.avg_power,
-                maxPower: activitySummary.max_power,
-                totalCalories: totalCalories
-            });
-            
-            encoder.writeMesg({
-                mesgNum: Profile.MesgNum.ACTIVITY,
-                totalTimerTime: activitySummary.total_moving_time || parsedRecords.length,
-                numSessions: 1,
-                type: "manual",
-                event: "activity"
-            });
-
-            let accumulatedDistance = 0;
-            let lastLat = null;
-            let lastLng = null;
-
-            parsedRecords.forEach((rec) => {
-                if (!rec.position_long || !rec.position_lat) return;
-                const [wgsLng, wgsLat] = toWgs84(rec.position_long, rec.position_lat, inputEncoding);
-                
-                if (lastLat !== null && lastLng !== null) {
-                    const R = 6371000;
-                    const dLat = (wgsLat - lastLat) * Math.PI / 180;
-                    const dLon = (wgsLng - lastLng) * Math.PI / 180;
-                    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(wgsLat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                    accumulatedDistance += R * c;
-                }
-                lastLat = wgsLat;
-                lastLng = wgsLng;
-
-                const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
-
-                const { positionLat: nativeLat, positionLong: nativeLong, ...cleanRec } = rec;
-                
-                encoder.writeMesg({
-                    ...cleanRec,
-                    mesgNum: Profile.MesgNum.RECORD,
-                    positionLat: Math.round(outLat * (2147483648 / 180)),
-                    positionLong: Math.round(outLng * (2147483648 / 180)),
-                    altitude: rec.altitude,
-                    timestamp: rec.timestamp ? new Date(rec.timestamp) : new Date(),
-                    heartRate: rec.heart_rate,
-                    cadence: rec.cadence,
-                    power: rec.power,
-                    temperature: rec.temperature,
-                    speed: rec.speed,
-                    distance: accumulatedDistance
-                });
-            });
-            
-            const uint8Array = encoder.close();
-            outputBlobData = new Blob([uint8Array], { type: 'application/octet-stream' });
-        } else {
-            outputBlobData = new Blob([gpxContent], { type: 'application/gpx+xml;charset=utf-8;' });
-        }
-
-        // Statistical Panel Calculations (Strict inclusion of 0 values for averages)
-        const totalDist = activitySummary.total_distance ? (activitySummary.total_distance / 1000).toFixed(2) + ' km' : '0.00 km';
-        let movingTimeStr = '-';
+        dom.statDistance.innerText = activitySummary.total_distance ? (activitySummary.total_distance / 1000).toFixed(2) + ' km' : '0.00 km';
         if (activitySummary.total_moving_time) {
-            const s = Math.floor(activitySummary.total_moving_time % 60);
-            const m = Math.floor((activitySummary.total_moving_time / 60) % 60);
-            const h = Math.floor(activitySummary.total_moving_time / 3600);
-            movingTimeStr = `${h}h ${m}m ${s}s`;
+            const s = Math.floor(activitySummary.total_moving_time % 60), m = Math.floor((activitySummary.total_moving_time / 60) % 60), h = Math.floor(activitySummary.total_moving_time / 3600);
+            dom.statMovingTime.innerText = `${h}h ${m}m ${s}s`;
         }
-        
-        const eleGain = activitySummary.total_ascent ? activitySummary.total_ascent.toFixed(0) + ' m' : '0 m';
-        
-        const avgSpd = metrics.speed.length ? (metrics.speed.reduce((a, b) => a + b, 0) / metrics.speed.length).toFixed(1) : '0.0';
-        const maxSpd = metrics.speed.length ? Math.max(...metrics.speed).toFixed(1) : '0.0';
-        const avgHr = metrics.hr.length ? (metrics.hr.reduce((a, b) => a + b, 0) / metrics.hr.length).toFixed(0) : '0';
-        const maxHr = metrics.hr.length ? Math.max(...metrics.hr).toFixed(0) : '0';
-        const avgCad = metrics.cad.length ? (metrics.cad.reduce((a, b) => a + b, 0) / metrics.cad.length).toFixed(0) : '0';
-        const maxCad = metrics.cad.length ? Math.max(...metrics.cad).toFixed(0) : '0';
-        const avgPwr = metrics.pwr.length ? (metrics.pwr.reduce((a, b) => a + b, 0) / metrics.pwr.length).toFixed(0) : '0';
-        const maxPwr = metrics.pwr.length ? Math.max(...metrics.pwr).toFixed(0) : '0';
-        const avgTmp = metrics.temp.length ? (metrics.temp.reduce((a, b) => a + b, 0) / metrics.temp.length).toFixed(1) : '0.0';
-        const maxTmp = metrics.temp.length ? Math.max(...metrics.temp).toFixed(1) : '0.0';
+        dom.statElevation.innerText = activitySummary.total_ascent ? activitySummary.total_ascent.toFixed(0) + ' m' : '0 m';
 
-        dom.statDistance.innerText = totalDist;
-        dom.statMovingTime.innerText = movingTimeStr;
-        dom.statElevation.innerText = eleGain;
+        const calcAvgMax = (arr, round = 0) => arr.length ? [(arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(round), Math.max(...arr).toFixed(round)] : ['0', '0'];
+        const [avgSpd, maxSpd] = calcAvgMax(metrics.speed, 1);
+        const [avgHr, maxHr] = calcAvgMax(metrics.hr, 0);
+        const [avgCad, maxCad] = calcAvgMax(metrics.cad, 0);
+        const [avgPwr, maxPwr] = calcAvgMax(metrics.pwr, 0);
+        const [avgTmp, maxTmp] = calcAvgMax(metrics.temp, 1);
+
         dom.statSpeed.innerText = `${avgSpd} / ${maxSpd} km/h`;
         dom.statHeartRate.innerText = `${avgHr} / ${maxHr} bpm`;
         dom.statCadence.innerText = `${avgCad} / ${maxCad} rpm`;
         dom.statPower.innerText = `${avgPwr} W / ${maxPwr} W`;
         dom.statTemperature.innerText = metrics.temp.length ? `${avgTmp} / ${maxTmp} °C` : '-';
-        
         dom.statsGrid.classList.remove('d-none');
 
-        // Reset and Destruct Existing Chart Context Instances
-        Object.keys(chartInstances).forEach((key) => {
-            if (chartInstances[key]) {
-                chartInstances[key].destroy();
-            }
-        });
+        Object.keys(chartInstances).forEach((k) => { if (chartInstances[k]) chartInstances[k].destroy(); });
+        dom.chartsContainer.classList.remove('d-none');
+        chartInstances.speed = createTelemetryChart('speedChart', 'Speed', metrics.speed, '#0D6EFD', 'km/h');
+        chartInstances.heartRate = createTelemetryChart('heartRateChart', 'Heart Rate', metrics.hr, '#E83E8C', 'bpm');
+        chartInstances.cadence = createTelemetryChart('cadenceChart', 'Cadence', metrics.cad, '#198754', 'rpm');
+        chartInstances.power = createTelemetryChart('powerChart', 'Power', metrics.pwr, '#DC3545', 'W');
+        chartInstances.elevation = createTelemetryChart('elevationChart', 'Elevation', metrics.ele, '#6F42C1', 'm');
+        chartInstances.temperature = createTelemetryChart('temperatureChart', 'Temperature', metrics.temp, '#FD7E14', '°C');
 
-        if (metrics.speed.length || metrics.hr.length || metrics.pwr.length || metrics.cad.length || metrics.ele.length || metrics.temp.length) {
-            dom.chartsContainer.classList.remove('d-none');
-            chartInstances.speed = createTelemetryChart('speedChart', 'Speed', metrics.speed, '#0D6EFD', 'km/h');
-            chartInstances.heartRate = createTelemetryChart('heartRateChart', 'Heart Rate', metrics.hr, '#E83E8C', 'bpm');
-            chartInstances.cadence = createTelemetryChart('cadenceChart', 'Cadence', metrics.cad, '#198754', 'rpm');
-            chartInstances.power = createTelemetryChart('powerChart', 'Power', metrics.pwr, '#DC3545', 'W');
-            chartInstances.elevation = createTelemetryChart('elevationChart', 'Elevation', metrics.ele, '#6F42C1', 'm');
-            chartInstances.temperature = createTelemetryChart('temperatureChart', 'Temperature', metrics.temp, '#FD7E14', '°C');
-        }
-
-        // Wipe Layer Vector Overlays
-        map.eachLayer((layer) => {
-            if (layer instanceof L.Polyline || layer instanceof L.Marker) {
-                map.removeLayer(layer);
-            }
-        });
-
+        map.eachLayer((l) => { if (l instanceof L.Polyline || l instanceof L.Marker) map.removeLayer(l); });
         if (latLngs.length > 0) {
             const polyline = L.polyline(latLngs, { color: '#0056B3', weight: 4 }).addTo(map);
             map.fitBounds(polyline.getBounds());
-            
             L.marker(latLngs[0]).addTo(map).bindPopup('Start Point');
             L.marker(latLngs[latLngs.length - 1]).addTo(map).bindPopup('End Point');
-
             showStatus(`Successfully loaded ${parsedRecords.length} records!`, 'text-success');
             dom.exportBtn.disabled = false;
         } else {
-            showStatus('Parsed track data successfully, but found no valid GPS map coordinates.', 'text-success');
+            showStatus('Parsed track data successfully, but found no valid coordinates.', 'text-warning');
             dom.exportBtn.disabled = true;
         }
     };
 
-    // --- Async Local Document Pipeline Deserializer ---
     const parseAndProcess = async () => {
         const inputFormat = dom.inputFormat.value;
         showStatus(`Parsing ${inputFormat} file...`, 'text-warning');
-        dom.statsGrid.classList.add('d-none');
-        dom.chartsContainer.classList.add('d-none');
-        dom.activityDateContainer.classList.add('d-none');
+        dom.statsGrid.classList.add('d-none'); dom.chartsContainer.classList.add('d-none'); dom.activityDateContainer.classList.add('d-none');
 
         try {
             if (inputFormat === 'FIT') {
-                if (!currentRawBuffer) {
-                    return;
-                }
-                
-                const uint8Array = new Uint8Array(currentRawBuffer);
-                const stream = Stream.fromByteArray(uint8Array);
+                if (!currentRawBuffer) return;
+                const stream = Stream.fromByteArray(new Uint8Array(currentRawBuffer));
                 const decoder = new Decoder(stream);
-                
-                if (!decoder.isFIT()) {
-                    throw new Error('Invalid file structure: Not a valid Garmin FIT format target.');
-                }
-                
-                parsedRecords = [];
-                activitySummary = {};
+                if (!decoder.isFIT()) throw new Error('Invalid file structure: Not a valid Garmin FIT target.');
 
+                parsedRecords = []; activitySummary = {};
                 const result = decoder.read();
                 const messages = result.messages;
-                
                 const rawRecords = messages?.record || messages?.records || messages?.recordMesgs || [];
-                if (rawRecords && rawRecords.length > 0) {
+
+                if (rawRecords.length > 0) {
                     parsedRecords = rawRecords.map((rec) => ({
                         position_lat: rec.positionLat ? rec.positionLat * (180 / 2147483648) : undefined,
                         position_long: rec.positionLong ? rec.positionLong * (180 / 2147483648) : undefined,
                         altitude: rec.enhancedAltitude !== undefined ? rec.enhancedAltitude : rec.altitude,
                         timestamp: rec.timestamp ? new Date(rec.timestamp).toISOString() : undefined,
-                        heart_rate: rec.heartRate,
-                        cadence: rec.cadence,
-                        power: rec.power,
-                        temperature: rec.temperature,
-                        speed: rec.enhancedSpeed !== undefined ? rec.enhancedSpeed : rec.speed,
-                        ...rec 
+                        heart_rate: rec.heartRate, cadence: rec.cadence, power: rec.power, temperature: rec.temperature,
+                        speed: rec.enhancedSpeed !== undefined ? rec.enhancedSpeed : rec.speed, ...rec
                     }));
                 }
-                
                 const sessions = messages?.session || messages?.sessions || messages?.sessionMesgs || [];
-                if (sessions && sessions[0]) {
+                if (sessions[0]) {
                     const fields = sessions[0];
                     activitySummary = {
-                        total_distance: fields.totalDistance,
-                        total_moving_time: fields.totalMovingTime || fields.totalTimerTime,
-                        total_ascent: fields.totalAscent,
-                        avg_speed: fields.avgSpeed,
-                        max_speed: fields.maxSpeed,
-                        avg_heart_rate: fields.avgHeartRate,
-                        max_heart_rate: fields.maxHeartRate,
-                        avg_cadence: fields.avgCadence,
-                        max_cadence: fields.maxCadence,
-                        avg_power: fields.avgPower,
-                        max_power: fields.maxPower,
-                        total_calories: fields.totalCalories || fields.calories,
-                        ...fields 
+                        total_distance: fields.totalDistance, total_moving_time: fields.totalMovingTime || fields.totalTimerTime,
+                        total_ascent: fields.totalAscent, total_calories: fields.totalCalories || fields.calories, ...fields
                     };
                 }
-                
-                if (parsedRecords.length === 0) {
-                    throw new Error('No data track records found in this file.');
-                }
-                
-                if (!activitySummary.total_distance || activitySummary.total_distance === 0) {
-                    let totalDist = 0;
-                    let lastLat = null;
-                    let lastLng = null;
-                    parsedRecords.forEach((rec) => {
-                        if (rec.position_lat && rec.position_long) {
-                            if (lastLat !== null && lastLng !== null) {
-                                const R = 6371000;
-                                const dLat = (rec.position_lat - lastLat) * Math.PI / 180;
-                                const dLon = (rec.position_long - lastLng) * Math.PI / 180;
-                                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(rec.position_lat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-                                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                                totalDist += R * c;
-                            }
-                            lastLat = rec.position_lat;
-                            lastLng = rec.position_long;
-                        }
-                    });
-                    activitySummary.total_distance = totalDist;
-                }
-
-                if (!activitySummary.total_moving_time || activitySummary.total_moving_time === 0) {
-                    activitySummary.total_moving_time = parsedRecords.length;
-                }
-
-                if (!activitySummary.total_ascent || activitySummary.total_ascent === 0) {
-                    let computedAscent = 0;
-                    let lastEle = null;
-                    parsedRecords.forEach((rec) => {
-                        if (rec.altitude !== undefined) {
-                            if (lastEle !== null && rec.altitude > lastEle) {
-                                computedAscent += (rec.altitude - lastEle);
-                            }
-                            lastEle = rec.altitude;
-                        }
-                    });
-                    activitySummary.total_ascent = computedAscent;
-                }
+                if (parsedRecords.length === 0) throw new Error('No data track records found in this file.');
+            } else if (inputFormat === 'TCX') {
+                if (!currentRawText) return;
+                parseTcxToRecords(currentRawText);
             } else {
-                if (!currentRawText) {
-                    return;
-                }
+                if (!currentRawText) return;
                 parseGpxToRecords(currentRawText);
             }
             processAndRenderTrack();
@@ -767,65 +628,36 @@
         }
     };
 
-    // --- Standard Application Trigger Event Registrars ---
     dom.fitFile.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (!file) {
-            return;
-        }
+        if (!file) return;
 
         const ext = file.name.split('.').pop().toUpperCase();
-        if (ext === 'FIT' || ext === 'GPX') {
-            dom.inputFormat.value = ext;
-        }
+        if (['FIT', 'TCX', 'GPX'].includes(ext)) dom.inputFormat.value = ext;
 
         const reader = new FileReader();
         reader.onload = (event) => {
             currentRawBuffer = event.target.result;
-            const textDecoder = new TextDecoder();
-            currentRawText = textDecoder.decode(currentRawBuffer);
+            currentRawText = new TextDecoder().decode(currentRawBuffer);
             dom.refreshBtn.disabled = false;
             parseAndProcess();
         };
         reader.readAsArrayBuffer(file);
     });
 
-    // Handle automated layout or calculation state refreshes synchronously
-    dom.inputFormat.addEventListener('change', () => {
-        if (currentRawBuffer) parseAndProcess();
-    });
-    dom.inputEncoding.addEventListener('change', () => {
-        if (currentRawBuffer) parseAndProcess();
-    });
-    dom.outputFormat.addEventListener('change', () => {
-        if (currentRawBuffer) processAndRenderTrack();
-    });
-    dom.outputEncoding.addEventListener('change', () => {
-        if (currentRawBuffer) processAndRenderTrack();
-    });
-
+    ['inputFormat', 'inputEncoding'].forEach(id => dom[id].addEventListener('change', () => { if (currentRawBuffer) parseAndProcess(); }));
+    ['outputFormat', 'outputEncoding'].forEach(id => dom[id].addEventListener('change', () => { if (currentRawBuffer) processAndRenderTrack(); }));
     dom.refreshBtn.addEventListener('click', parseAndProcess);
 
     dom.exportBtn.addEventListener('click', () => {
-        if (currentRawBuffer) {
-            // Re-render tracks instantly to enforce potential output selection matrix adjustments prior to export compilation
-            processAndRenderTrack();
-        }
-        if (!outputBlobData) {
-            return;
-        }
+        if (currentRawBuffer) processAndRenderTrack();
+        if (!outputBlobData) return;
         const format = dom.outputFormat.value;
-        const filename = `converted_activity.${format.toLowerCase()}`;
-        
-        const url = URL.createObjectURL(outputBlobData);
         const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        link.href = URL.createObjectURL(outputBlobData);
+        link.download = `converted_activity.${format.toLowerCase()}`;
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
     });
 </script>
-
 </body>
 </html>
