@@ -49,15 +49,15 @@
 
 ## Conditional
 
-        IF (source file upload change) OR (source file format change) OR (source file encoding change) THEN
-            ajax refresh preview
-        FI
+    IF (source file upload change) OR (source file format change) OR (source file encoding change) THEN
+        ajax refresh preview
+    FI
 
-        IF (source file format is .FIT) THEN
-            decode source file with "@garmin/fitsdk@21.208.0"
-            decode source file with FIT Profile
-            implement decoder as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#decoder
-        FI
+    IF (source file format is .FIT) THEN
+        decode source file with "@garmin/fitsdk@21.208.0"
+        decode source file with FIT Profile
+        implement decoder as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#decoder
+    FI
 
 # Preview
 
@@ -110,9 +110,9 @@
 
 ## Conditional
 
-        IF (output file format is .FIT) THEN
-            encode output file with "@garmin/fitsdk@21.208.0"
-            encode output file with FIT Profile
-            implement create stream as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#creating-streams
-            implement encoder as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#encoder
-        FI
+    IF (output file format is .FIT) THEN
+        encode output file with "@garmin/fitsdk@21.208.0"
+        encode output file with FIT Profile
+        implement create stream as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#creating-streams
+        implement encoder as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#encoder
+    FI
