@@ -57,6 +57,7 @@
         decode source file with "@garmin/fitsdk@21.208.0"
         decode source file with FIT Profile
         implement decoder as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#decoder
+        use `const decoder = new Decoder(stream);`
     FI
 
 # Preview
@@ -115,4 +116,7 @@
         encode output file with FIT Profile
         implement create stream as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#creating-streams
         implement encoder as https://github.com/garmin/fit-javascript-sdk/tree/21.208.0#encoder
+        use `const encoder = new Encoder();`
+        use `encoder.writeMesg()`
+        use `const uint8Array = encoder.close();`
     FI

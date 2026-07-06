@@ -663,15 +663,12 @@
                 }
                 
                 const uint8Array = new Uint8Array(currentRawBuffer);
+                const stream = Stream.fromByteArray(uint8Array);
+                const decoder = new Decoder(stream);
                 
-                // Isolating stream checking verification loops to avoid cross-pointer consumption anomalies
-                const streamForCheck = Stream.fromByteArray(Array.from(uint8Array));
-                if (!Decoder.isFIT(streamForCheck)) {
+                if (!decoder.isFIT()) {
                     throw new Error('Invalid file structure: Not a valid Garmin FIT format target.');
                 }
-
-                const stream = Stream.fromByteArray(Array.from(uint8Array));
-                const decoder = new Decoder(stream);
                 
                 parsedRecords = [];
                 activitySummary = {};
