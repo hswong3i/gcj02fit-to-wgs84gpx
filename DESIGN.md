@@ -1,4 +1,4 @@
-# Design Document: FIT / TCX / GPX Converter & Map Viewer
+# DESIGN.md
 
 ## Overview
 
@@ -28,6 +28,7 @@ The FIT / TCX / GPX Converter & Map Viewer is a client-side web application that
 ## Layout
 
 The application consists of a single-page layout centered in a container. It includes:
+
 - A header section with application title.
 - A settings section for input and output configuration (Format and Encoding).
 - Action buttons for file upload, refresh, and export.

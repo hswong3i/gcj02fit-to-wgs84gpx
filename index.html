@@ -1,172 +1,172 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FIT / TCX / GPX Converter & Map Viewer</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-fork-ribbon-css@0.2.3/gh-fork-ribbon.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        body {
-            background-color: #F4F6F9;
-        }
-        #map {
-            width: 100%;
-            height: 500px;
-            border-radius: 6px;
-            border: 1px solid #DDDDDD;
-        }
-        /* Improve contrast for labels and text */
-        .text-secondary { color: #6c757d !important; }
-        .text-dark { color: #212529 !important; }
-    </style>
-</head>
-<body>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 
-<a class="github-fork-ribbon" href="https://github.com/hswong3i/gcj02fit-to-wgs84gpx" data-ribbon="Fork me on GitHub" title="Fork me on GitHub" aria-label="Fork me on GitHub">Fork me on GitHub</a>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <a class="github-fork-ribbon" href="https://github.com/hswong3i/gcj02fit-to-wgs84gpx" data-ribbon="Fork me on GitHub" title="Fork me on GitHub" aria-label="Fork me on GitHub">Fork me on GitHub</a>
 
-<main class="container my-5">
-    <article class="card shadow p-4 bg-white rounded">
+    <main class="container my-5">
+      <article class="card shadow p-4 bg-white rounded">
         <h1 class="h2 mb-2 text-dark border-bottom pb-2">FIT / TCX / GPX Converter & Map Viewer</h1>
         <p class="text-secondary mb-4">Upload your source file to view telemetry analytics data and export with alternate tracking layouts.</p>
 
-        <section class="row g-3 mb-4 bg-light p-3 border rounded" aria-labelledby="settings-heading">
-            <h2 id="settings-heading" class="visually-hidden">Settings</h2>
-            <div class="col-md-6 border-end">
-                <h3 class="h6 fw-bold text-dark mb-2">Input Settings</h3>
-                <div class="row g-2">
-                    <div class="col-6">
-                        <label class="small fw-semibold text-dark" for="inputFormat">Format</label>
-                        <select id="inputFormat" class="form-select form-select-sm" aria-label="Input File Format">
-                            <option value="FIT" selected>.FIT</option>
-                            <option value="TCX">.TCX</option>
-                            <option value="GPX">.GPX</option>
-                        </select>
-                    </div>
-                    <div class="col-6">
-                        <label class="small fw-semibold text-dark" for="inputEncoding">Encoding</label>
-                        <select id="inputEncoding" class="form-select form-select-sm" aria-label="Input File Encoding">
-                            <option value="GCJ02" selected>GCJ02</option>
-                            <option value="BD09">BD09</option>
-                            <option value="WGS84">WGS84</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <h3 class="h6 fw-bold text-dark mb-2">Output Settings</h3>
-                <div class="row g-2">
-                    <div class="col-6">
-                        <label class="small fw-semibold text-dark" for="outputFormat">Format</label>
-                        <select id="outputFormat" class="form-select form-select-sm" aria-label="Output File Format">
-                            <option value="FIT" selected>.FIT</option>
-                            <option value="TCX">.TCX</option>
-                            <option value="GPX">.GPX</option>
-                        </select>
-                    </div>
-                    <div class="col-6">
-                        <label class="small fw-semibold text-dark" for="outputEncoding">Encoding</label>
-                        <select id="outputEncoding" class="form-select form-select-sm" aria-label="Output File Encoding">
-                            <option value="GCJ02">GCJ02</option>
-                            <option value="BD09">BD09</option>
-                            <option value="WGS84" selected>WGS84</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         <section class="row g-3 align-items-center mb-4">
-            <div class="col-md-4">
-                <label for="fitFile" class="visually-hidden">Upload File</label>
-                <input type="file" class="form-control" id="fitFile" accept=".fit,.tcx,.gpx" />
-            </div>
-            <div class="col-md-2">
-                <button id="refreshBtn" class="btn btn-secondary w-100 fw-bold" disabled>Refresh</button>
-            </div>
-            <div class="col-md-3">
-                <button id="exportBtn" class="btn btn-primary w-100 fw-bold" disabled>Export File</button>
-            </div>
-            <div class="col-md-3">
-                <div id="statusMessage" class="fw-bold small" aria-live="polite"></div>
-            </div>
+          <div class="col-md-4">
+            <label for="fitFile" class="visually-hidden">Upload File</label>
+            <input type="file" class="form-control" id="fitFile" accept=".fit,.tcx,.gpx" />
+          </div>
+          <div class="col-md-2">
+            <button id="refreshBtn" class="btn btn-secondary w-100 fw-bold" disabled>Refresh</button>
+          </div>
+          <div class="col-md-3">
+            <button id="exportBtn" class="btn btn-primary w-100 fw-bold" disabled>Export File</button>
+          </div>
+          <div class="col-md-3">
+            <div id="statusMessage" class="fw-bold small" aria-live="polite"></div>
+          </div>
         </section>
 
-        <section class="mb-3 text-secondary fw-bold d-none" id="activityDateContainer">
-            Activity Date: <span id="activityDateSpan" class="text-dark">-</span>
-        </section>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <section class="card shadow-sm border-light-subtle bg-light p-3 h-100" aria-labelledby="input-settings-heading">
+              <h2 id="input-settings-heading" class="text-uppercase text-dark fw-semibold small mb-3 text-center">Input Settings</h2>
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="small fw-semibold text-dark" for="inputFormat">Format</label>
+                  <select id="inputFormat" class="form-select form-select-sm" aria-label="Input File Format">
+                    <option value="FIT" selected>.FIT</option>
+                    <option value="TCX">.TCX</option>
+                    <option value="GPX">.GPX</option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="small fw-semibold text-dark" for="inputEncoding">Encoding</label>
+                  <select id="inputEncoding" class="form-select form-select-sm" aria-label="Input File Encoding">
+                    <option value="GCJ02" selected>GCJ02</option>
+                    <option value="BD09">BD09</option>
+                    <option value="WGS84">WGS84</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+          </div>
+          <div class="col-md-6">
+            <section class="card shadow-sm border-light-subtle bg-light p-3 h-100" aria-labelledby="output-settings-heading">
+              <h2 id="output-settings-heading" class="text-uppercase text-dark fw-semibold small mb-3 text-center">Output Settings</h2>
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="small fw-semibold text-dark" for="outputFormat">Format</label>
+                  <select id="outputFormat" class="form-select form-select-sm" aria-label="Output File Format">
+                    <option value="FIT" selected>.FIT</option>
+                    <option value="TCX">.TCX</option>
+                    <option value="GPX">.GPX</option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="small fw-semibold text-dark" for="outputEncoding">Encoding</label>
+                  <select id="outputEncoding" class="form-select form-select-sm" aria-label="Output File Encoding">
+                    <option value="GCJ02">GCJ02</option>
+                    <option value="BD09">BD09</option>
+                    <option value="WGS84" selected>WGS84</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
 
-        <section class="row row-cols-2 row-cols-sm-4 g-3 mb-4 d-none" id="statsGrid" aria-label="Activity Statistics">
-            <div class="col">
-                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
-                    <h3 class="text-uppercase text-dark fw-semibold small mb-1">Total Distance</h3>
-                    <span id="statDistance" class="fs-5 fw-bold text-dark">-</span>
-                </div>
+        <section class="row row-cols-1 row-cols-sm-3 g-3 mb-4 d-none" id="statsGrid" aria-label="Activity Statistics">
+          <div class="col">
+            <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+              <h3 class="text-uppercase text-dark fw-semibold small mb-1">Activity Date</h3>
+              <span id="statActivityDate" class="fs-5 fw-bold text-dark">-</span>
             </div>
-            <div class="col">
-                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
-                    <h3 class="text-uppercase text-dark fw-semibold small mb-1">Moving Time</h3>
-                    <span id="statMovingTime" class="fs-5 fw-bold text-dark">-</span>
-                </div>
+          </div>
+          <div class="col">
+            <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+              <h3 class="text-uppercase text-dark fw-semibold small mb-1">Total Distance</h3>
+              <span id="statDistance" class="fs-5 fw-bold text-dark">-</span>
             </div>
-            <div class="col">
-                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
-                    <h3 class="text-uppercase text-dark fw-semibold small mb-1">Elevation</h3>
-                    <span id="statElevation" class="fs-5 fw-bold text-dark">-</span>
-                </div>
+          </div>
+          <div class="col">
+            <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+              <h3 class="text-uppercase text-dark fw-semibold small mb-1">Moving Time</h3>
+              <span id="statMovingTime" class="fs-5 fw-bold text-dark">-</span>
             </div>
-            <div class="col">
-                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
-                    <h3 class="text-uppercase text-dark fw-semibold small mb-1">Avg / Max Speed</h3>
-                    <span id="statSpeed" class="fs-5 fw-bold text-dark">-</span>
-                </div>
+          </div>
+          <div class="col">
+            <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+              <h3 class="text-uppercase text-dark fw-semibold small mb-1">Elevation</h3>
+              <span id="statElevation" class="fs-5 fw-bold text-dark">-</span>
             </div>
-            <div class="col">
-                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
-                    <h3 class="text-uppercase text-dark fw-semibold small mb-1">Avg / Max Heart Rate</h3>
-                    <span id="statHeartRate" class="fs-5 fw-bold text-dark">-</span>
-                </div>
+          </div>
+          <div class="col">
+            <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+              <h3 class="text-uppercase text-dark fw-semibold small mb-1">Avg / Max Speed</h3>
+              <span id="statSpeed" class="fs-5 fw-bold text-dark">-</span>
             </div>
-            <div class="col">
-                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
-                    <h3 class="text-uppercase text-dark fw-semibold small mb-1">Avg / Max Cadence</h3>
-                    <span id="statCadence" class="fs-5 fw-bold text-dark">-</span>
-                </div>
+          </div>
+          <div class="col">
+            <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+              <h3 class="text-uppercase text-dark fw-semibold small mb-1">Avg / Max Heart Rate</h3>
+              <span id="statHeartRate" class="fs-5 fw-bold text-dark">-</span>
             </div>
-            <div class="col">
-                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
-                    <h3 class="text-uppercase text-dark fw-semibold small mb-1">Avg / Max Power</h3>
-                    <span id="statPower" class="fs-5 fw-bold text-dark">-</span>
-                </div>
+          </div>
+          <div class="col">
+            <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+              <h3 class="text-uppercase text-dark fw-semibold small mb-1">Avg / Max Cadence</h3>
+              <span id="statCadence" class="fs-5 fw-bold text-dark">-</span>
             </div>
-            <div class="col">
-                <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
-                    <h3 class="text-uppercase text-dark fw-semibold small mb-1">Avg / Max Temperature</h3>
-                    <span id="statTemperature" class="fs-5 fw-bold text-dark">-</span>
-                </div>
+          </div>
+          <div class="col">
+            <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+              <h3 class="text-uppercase text-dark fw-semibold small mb-1">Avg / Max Power</h3>
+              <span id="statPower" class="fs-5 fw-bold text-dark">-</span>
             </div>
+          </div>
+          <div class="col">
+            <div class="card text-center p-2 bg-light border-light-subtle shadow-sm h-100">
+              <h3 class="text-uppercase text-dark fw-semibold small mb-1">Avg / Max Temperature</h3>
+              <span id="statTemperature" class="fs-5 fw-bold text-dark">-</span>
+            </div>
+          </div>
         </section>
 
         <section id="map" class="mb-4" aria-label="Map View"></section>
 
         <section class="card p-3 bg-white border border-light-subtle shadow-sm mb-4 d-none" id="chartsContainer">
-            <h2 class="h5 mb-3 text-dark border-bottom pb-2">Telemetry Performance Charts</h2>
-            <div class="mb-4"><canvas id="speedChart" height="120" aria-label="Speed Chart"></canvas></div>
-            <div class="mb-4"><canvas id="heartRateChart" height="120" aria-label="Heart Rate Chart"></canvas></div>
-            <div class="mb-4"><canvas id="cadenceChart" height="120" aria-label="Cadence Chart"></canvas></div>
-            <div class="mb-4"><canvas id="powerChart" height="120" aria-label="Power Chart"></canvas></div>
-            <div class="mb-4"><canvas id="elevationChart" height="120" aria-label="Elevation Chart"></canvas></div>
-            <div class="mb-2"><canvas id="temperatureChart" height="120" aria-label="Temperature Chart"></canvas></div>
+          <h2 class="h5 mb-3 text-dark border-bottom pb-2">Telemetry Performance Charts</h2>
+          <div class="mb-4">
+            <canvas id="speedChart" height="120" aria-label="Speed Chart"></canvas>
+          </div>
+          <div class="mb-4">
+            <canvas id="heartRateChart" height="120" aria-label="Heart Rate Chart"></canvas>
+          </div>
+          <div class="mb-4">
+            <canvas id="cadenceChart" height="120" aria-label="Cadence Chart"></canvas>
+          </div>
+          <div class="mb-4">
+            <canvas id="powerChart" height="120" aria-label="Power Chart"></canvas>
+          </div>
+          <div class="mb-4">
+            <canvas id="elevationChart" height="120" aria-label="Elevation Chart"></canvas>
+          </div>
+          <div class="mb-2">
+            <canvas id="temperatureChart" height="120" aria-label="Temperature Chart"></canvas>
+          </div>
         </section>
-    </article>
-</main>
+      </article>
+    </main>
 
-
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
-<script type="module" src="js/app.js"></script>
-</body>
+    <script src="node_modules/leaflet/dist/leaflet.js"></script>
+    <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="node_modules/chart.js/dist/chart.umd.js"></script>
+    <script type="module" src="js/app.js"></script>
+  </body>
 </html>

@@ -1,0 +1,70 @@
+module.exports = {
+  extends: ["stylelint-config-standard-scss", "stylelint-config-twbs-bootstrap"],
+  rules: {
+    "selector-class-pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:__[a-z0-9]+(?:-[a-z0-9]+)*)?(?:--[a-z0-9]+(?:-[a-z0-9]+)*)?$",
+    "selector-no-qualifying-type": null,
+    "alpha-value-notation": "number",
+    "color-function-notation": "modern",
+    "color-no-hex": null,
+    "declaration-block-single-line-max-declarations": 2,
+    "declaration-empty-line-before": null,
+    "declaration-no-important": null,
+    "declaration-property-value-keyword-no-deprecated": null,
+    "font-family-no-missing-generic-family-keyword": null,
+    "selector-max-compound-selectors": 3,
+    "selector-max-id": 1,
+    "value-keyword-case": "lower",
+    "at-rule-no-unknown": [
+      true,
+      {
+        ignoreAtRules: [
+          "include",
+          "mixin",
+          "each",
+          "if",
+          "else",
+          "for",
+          "function",
+          "return",
+          "extend",
+          "use",
+          "forward",
+        ],
+      },
+    ],
+    "custom-property-pattern": null,
+    "scss/dollar-variable-pattern": null,
+    "scss/at-extend-no-missing-placeholder": null,
+    "scss/selector-no-redundant-nesting-selector": null,
+    "no-descending-specificity": null,
+    "no-duplicate-selectors": null,
+    "selector-pseudo-class-no-unknown": [
+      true,
+      {
+        ignorePseudoClasses: ["global", "local"],
+      },
+    ],
+    "property-no-unknown": [
+      true,
+      {
+        ignoreProperties: ["-webkit-overflow-scrolling"],
+      },
+    ],
+    "function-no-unknown": [
+      true,
+      {
+        ignoreFunctions: [
+          "color-mix",
+          "tint-color",
+          "shade-color",
+          "shift-color",
+          "to-rgb",
+          "add",
+          "subtract",
+          "quote",
+          "mix",
+        ],
+      },
+    ],
+  },
+};

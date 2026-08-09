@@ -1,0 +1,17 @@
+// 1. Import Bootstrap functions to unlock variable manipulation
+@import "../node_modules/bootstrap/scss/functions";
+
+// 2. Load your overrides
+@import "base/variables";
+@import "base/variables-dark";
+
+// 3. Import the rest of Bootstrap
+@import "../node_modules/bootstrap/scss/bootstrap";
+
+// 4. Load custom component styles
+@import "base/base";
+
+// 5. Vendor
+@import "vendor/bootstrap-icons";
+@import "vendor/leaflet";
+@import "vendor/gh-fork-ribbon";

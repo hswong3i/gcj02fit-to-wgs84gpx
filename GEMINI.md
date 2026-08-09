@@ -111,12 +111,14 @@
 ## Dashboard
 
 - display "Activity Date"
-- display "Total Distance", "Moving Time", "Elevation"
-- display "Average Speed", "Max Speed"
-- display "Average Heart Rate", "Max Heart Rate"
-- display "Average Cadence", "Max Cadence"
-- display "Average Power", "Max Power"
-- display "Average Temperature", "Max Temperature"
+- display "Total Distance"
+- display "Moving Time"
+- display "Elevation"
+- display "Average Speed / Max Speed"
+- display "Average Heart Rate / Max Heart Rate"
+- display "Average Cadence / Max Cadence"
+- display "Average Power / Max Power"
+- display "Average Temperature / Max Temperature"
 - not display "Calories"
 - include zero records for average calculation
 
