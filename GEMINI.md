@@ -4,21 +4,60 @@
 
 - only change code required
 - only change comment required
+- exclude citation tags
+- exclude bracketed numbers
+- exclude source links
 - synchronize coding style
 - synchronize comment style
 - synchronize implementation style
 - synchronize layout design
+- check with SASS
 - check with ESLint
 - check with Stylelint
 - check with Idempotency
+- ensure WCAG 2.2 AA Compliance
+- ensure OWASP Top 10 Compliance
+- ensure SSOT (Single Source of Truth) Compliance
+- ensure Bootstrap utilities Compliance
+- ensure Bootstrap Icons utilities Compliance
+- ensure Bootstrap Code Guide Compliance
+- ensure Drupal CSS Coding Standard Compliance
+- ensure Drupal Javascript Coding Standard Compliance
 
 ## Libraries
 
-- use `@garmin/fitsdk@21.208.0`
-- use `bootstrap@5.3.8`
-- use `chart.js@4.5.1`
-- use `github-fork-ribbon-css@0.2.3`
-- use `leaflet@1.9.4`
+- `npm install bootstrap-icons@~1.13.1`
+- `npm install bootstrap@~5.3.8`
+- `npm install leaflet@~1.9.4`
+- `npm install chart.js@~4.5.1`
+- `npm install @garmin/fitsdk@~21.208.0`
+- `npm install github-fork-ribbon-css@~0.2.3`
+
+# DESIGN.md
+
+- update `DESIGN.md`
+  - `pandoc -f gfm -t gfm --wrap preserve -o DESIGN.md DESIGN.md`
+- with schema in semantic versioning, e.g. 20260727.1.1
+  - MAJOR: today timestamp, e.g. 20260728
+  - MINOR: changes only when the interface breaks, e.g. 20260728.1
+  - PATCH: when defects are corrected, e.g. 20260727.1.1
+  - sync across all `*.css`, `*.js`, `*.html`, `*.md`
+  - `find *.* */*.css */*.js -type f | xargs sed -i 's/20260727.1.1/20260727.1.2/g'`
+- lock primary branding green in `#0d753a`
+- include WCAG 2.2 AA Compliance guideline and recommendation
+- include OWASP Top 10 Compliance guideline and recommendation
+- include SSOT Compliance guideline and recommendation
+- include CSS style guide for `bootstrap@5.3.8`
+- include sample `scss/styles.scss` for override all default values from `node_modules/bootstrap/scss/_variables.scss`
+- include simplest and portable `<link rel="stylesheet">` and `<script>` example, no `crossorigin`, no `defer`
+- include design guideline for following `*.css` and `*.js` and `*.html` implementation
+- generate guideline based on current implementation
+  - descriptive
+  - informative
+  - for product owner
+  - for project manager
+  - for junior developer
+  - for junior designer
 
 # Logic
 
