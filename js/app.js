@@ -1,0 +1,496 @@
+import { Decoder, Encoder, Stream, Profile } from 'https://cdn.jsdelivr.net/npm/@garmin/fitsdk@21.208.0/+esm';
+
+    const dom = {
+        fitFile: document.getElementById('fitFile'),
+        refreshBtn: document.getElementById('refreshBtn'),
+        exportBtn: document.getElementById('exportBtn'),
+        inputFormat: document.getElementById('inputFormat'),
+        inputEncoding: document.getElementById('inputEncoding'),
+        outputFormat: document.getElementById('outputFormat'),
+        outputEncoding: document.getElementById('outputEncoding'),
+        statusMessage: document.getElementById('statusMessage'),
+        activityDateContainer: document.getElementById('activityDateContainer'),
+        activityDateSpan: document.getElementById('activityDateSpan'),
+        statsGrid: document.getElementById('statsGrid'),
+        chartsContainer: document.getElementById('chartsContainer'),
+        statDistance: document.getElementById('statDistance'),
+        statMovingTime: document.getElementById('statMovingTime'),
+        statElevation: document.getElementById('statElevation'),
+        statSpeed: document.getElementById('statSpeed'),
+        statHeartRate: document.getElementById('statHeartRate'),
+        statCadence: document.getElementById('statCadence'),
+        statPower: document.getElementById('statPower'),
+        statTemperature: document.getElementById('statTemperature')
+    };
+
+    let map;
+    let parsedRecords = [];
+    let activitySummary = {};
+    let outputBlobData = null;
+    let currentRawBuffer = null;
+    let currentRawText = null;
+
+    const chartInstances = {
+        speed: null, heartRate: null, power: null, cadence: null, elevation: null, temperature: null
+    };
+
+    const initMap = () => {
+        map = L.map('map').setView([22.3193, 114.1694], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+    };
+    initMap();
+
+    const EE = 0.00669342162296594323;
+    const AA = 6378245.0;
+    const X_PI = 3.14159265358979324 * 3000.0 / 180.0;
+
+    const outOfChina = (lng, lat) => (lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271);
+
+    const transformLat = (lng, lat) => {
+        let ret = -100.0 + 2.0 * lng + 3.0 * lat + 0.2 * lat * lat + 0.1 * lng * lat + 0.2 * Math.sqrt(Math.abs(lng));
+        ret += (20.0 * Math.sin(6.0 * lng * Math.PI) + 20.0 * Math.sin(2.0 * lng * Math.PI)) * 2.0 / 3.0;
+        ret += (20.0 * Math.sin(lat * Math.PI) + 40.0 * Math.sin(lat / 3.0 * Math.PI)) * 2.0 / 3.0;
+        ret += (160.0 * Math.sin(lat * Math.PI / 12.0) + 320 * Math.sin(lat * Math.PI / 30.0)) * 2.0 / 3.0;
+        return ret;
+    };
+
+    const transformLng = (lng, lat) => {
+        let ret = 300.0 + lng + 2.0 * lat + 0.1 * lng * lng + 0.1 * lng * lat + 0.1 * Math.sqrt(Math.abs(lng));
+        ret += (20.0 * Math.sin(6.0 * lng * Math.PI) + 20.0 * Math.sin(2.0 * lng * Math.PI)) * 2.0 / 3.0;
+        ret += (20.0 * Math.sin(lng * Math.PI) + 40.0 * Math.sin(lng / 3.0 * Math.PI)) * 2.0 / 3.0;
+        ret += (150.0 * Math.sin(lng * Math.PI / 12.0) + 300.0 * Math.sin(lng * Math.PI / 30.0)) * 2.0 / 3.0;
+        return ret;
+    };
+
+    const gcj02ToWgs84 = (lng, lat) => {
+        if (outOfChina(lng, lat)) return [lng, lat];
+        let dlat = transformLat(lng - 105.0, lat - 35.0);
+        let dlng = transformLng(lng - 105.0, lat - 35.0);
+        const radlat = lat / 180.0 * Math.PI;
+        let magic = Math.sin(radlat);
+        magic = 1 - EE * magic * magic;
+        const sqrtmagic = Math.sqrt(magic);
+        dlat = (dlat * 180.0) / ((AA * (1 - EE)) / (magic * sqrtmagic) * Math.PI);
+        dlng = (dlng * 180.0) / (AA / sqrtmagic * Math.cos(radlat) * Math.PI);
+        return [lng * 2 - (lng + dlng), lat * 2 - (lat + dlat)];
+    };
+
+    const bd09ToGcj02 = (bd_lon, bd_lat) => {
+        const x = bd_lon - 0.0065;
+        const y = bd_lat - 0.006;
+        const z = Math.sqrt(x * x + y * y) - 0.00002 * Math.sin(y * X_PI);
+        const theta = Math.atan2(y, x) - 0.00003 * Math.cos(x * X_PI);
+        return [z * Math.cos(theta), z * Math.sin(theta)];
+    };
+
+    const bd09ToWgs84 = (bd_lon, bd_lat) => {
+        const gcj = bd09ToGcj02(bd_lon, bd_lat);
+        return gcj02ToWgs84(gcj[0], gcj[1]);
+    };
+
+    const wgs84ToGcj02 = (lng, lat) => {
+        if (outOfChina(lng, lat)) return [lng, lat];
+        let dlat = transformLat(lng - 105.0, lat - 35.0);
+        let dlng = transformLng(lng - 105.0, lat - 35.0);
+        const radlat = lat / 180.0 * Math.PI;
+        let magic = Math.sin(radlat);
+        magic = 1 - EE * magic * magic;
+        const sqrtmagic = Math.sqrt(magic);
+        dlat = (dlat * 180.0) / ((AA * (1 - EE)) / (magic * sqrtmagic) * Math.PI);
+        dlng = (dlng * 180.0) / (AA / sqrtmagic * Math.cos(radlat) * Math.PI);
+        return [lng + dlng, lat + dlat];
+    };
+
+    const gcj02ToBd09 = (lng, lat) => {
+        const z = Math.sqrt(lng * lng + lat * lat) + 0.00002 * Math.sin(lat * X_PI);
+        const theta = Math.atan2(lat, lng) + 0.00003 * Math.cos(lng * X_PI);
+        return [z * Math.cos(theta) + 0.0065, z * Math.sin(theta) + 0.006];
+    };
+
+    const wgs84ToBd09 = (lng, lat) => {
+        const gcj = wgs84ToGcj02(lng, lat);
+        return gcj02ToBd09(gcj[0], gcj[1]);
+    };
+
+    const toWgs84 = (lng, lat, fromEncoding) => {
+        if (fromEncoding === 'GCJ02') return gcj02ToWgs84(lng, lat);
+        if (fromEncoding === 'BD09') return bd09ToWgs84(lng, lat);
+        return [lng, lat];
+    };
+
+    const fromWgs84 = (lng, lat, toEncoding) => {
+        if (toEncoding === 'GCJ02') return wgs84ToGcj02(lng, lat);
+        if (toEncoding === 'BD09') return wgs84ToBd09(lng, lat);
+        return [lng, lat];
+    };
+
+    const showStatus = (msg, type) => {
+        dom.statusMessage.innerText = msg;
+        dom.statusMessage.className = `fw-bold small ${type}`;
+    };
+
+    const createTelemetryChart = (canvasId, label, data, color, unit) => {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        return new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({ length: data.length }, (_, i) => i + 1),
+                datasets: [{
+                    label: `${label} (${unit})`,
+                    data: data,
+                    borderColor: color,
+                    backgroundColor: color + '1A',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true, position: 'top' },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: { x: { display: false }, y: { beginAtZero: true } }
+            }
+        });
+    };
+
+    const parseGpxToRecords = (gpxText) => {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(gpxText, 'text/xml');
+        const trkpts = xmlDoc.getElementsByTagName('trkpt');
+        if (trkpts.length === 0) throw new Error('No GPX track segments located.');
+
+        parsedRecords = [];
+        let totalDist = 0, totalAscent = 0, totalCalories = 0;
+        let lastLat = null, lastLng = null, lastEle = null;
+
+        const descNode = xmlDoc.getElementsByTagName('desc')[0];
+        if (descNode && descNode.textContent.includes('Calories:')) {
+            const match = descNode.textContent.match(/Calories:\s*([\d.]+)/);
+            if (match) totalCalories = parseFloat(match[1]);
+        }
+
+        for (let i = 0; i < trkpts.length; i++) {
+            const pt = trkpts[i];
+            const lat = parseFloat(pt.getAttribute('lat'));
+            const lng = parseFloat(pt.getAttribute('lon'));
+            const eleNode = pt.getElementsByTagName('ele')[0];
+            const timeNode = pt.getElementsByTagName('time')[0];
+            const hrNode = pt.getElementsByTagName('hr')[0] || pt.getElementsByTagName('gpxtpx:hr')[0];
+            const cadNode = pt.getElementsByTagName('cad')[0] || pt.getElementsByTagName('gpxtpx:cad')[0];
+            const pwrNode = pt.getElementsByTagName('power')[0];
+            const tmpNode = pt.getElementsByTagName('atemp')[0] || pt.getElementsByTagName('gpxtpx:atemp')[0];
+            const spdNode = pt.getElementsByTagName('speed')[0] || pt.getElementsByTagName('gpxtpx:speed')[0];
+
+            const ele = eleNode ? parseFloat(eleNode.textContent) : undefined;
+            const record = {
+                position_lat: lat, position_long: lng, altitude: ele,
+                timestamp: timeNode ? timeNode.textContent : undefined,
+                heart_rate: hrNode ? parseInt(hrNode.textContent, 10) : 0,
+                cadence: cadNode ? parseInt(cadence.textContent, 10) : 0,
+                power: pwrNode ? parseInt(pwrNode.textContent, 10) : 0,
+                temperature: tmpNode ? parseFloat(tmpNode.textContent) : 0,
+                speed: spdNode ? parseFloat(spdNode.textContent) : 0
+            };
+
+            if (lastLat !== null && lastLng !== null) {
+                const R = 6371000;
+                const dLat = (lat - lastLat) * Math.PI / 180;
+                const dLon = (lng - lastLng) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                totalDist += R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+            }
+            if (ele !== undefined && lastEle !== null && ele > lastEle) totalAscent += (ele - lastEle);
+
+            lastLat = lat; lastLng = lng; if (ele !== undefined) lastEle = ele;
+            parsedRecords.push(record);
+        }
+
+        activitySummary = { total_distance: totalDist, total_moving_time: parsedRecords.length, total_ascent: totalAscent, total_calories: totalCalories };
+    };
+
+    const parseTcxToRecords = (tcxText) => {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(tcxText, 'text/xml');
+        const trackpoints = xmlDoc.getElementsByTagName('Trackpoint');
+        if (trackpoints.length === 0) throw new Error('No TCX track points located.');
+
+        parsedRecords = [];
+        let totalDist = 0, totalAscent = 0, totalCalories = 0;
+        let lastLat = null, lastLng = null, lastEle = null;
+
+        const caloriesNode = xmlDoc.getElementsByTagName('Calories')[0];
+        if (caloriesNode) totalCalories = parseFloat(caloriesNode.textContent);
+
+        for (let i = 0; i < trackpoints.length; i++) {
+            const pt = trackpoints[i];
+            const latNode = pt.getElementsByTagName('LatitudeDegrees')[0];
+            const lngNode = pt.getElementsByTagName('LongitudeDegrees')[0];
+            if (!latNode || !lngNode) continue;
+
+            const lat = parseFloat(latNode.textContent);
+            const lng = parseFloat(lngNode.textContent);
+            const eleNode = pt.getElementsByTagName('AltitudeMeters')[0];
+            const timeNode = pt.getElementsByTagName('Time')[0];
+            const hrNode = pt.getElementsByTagName('HeartRateBpm')[0]?.getElementsByTagName('Value')[0];
+            const cadNode = pt.getElementsByTagName('Cadence')[0];
+            const pwrNode = pt.getElementsByTagName('Watts')[0];
+
+            const ele = eleNode ? parseFloat(eleNode.textContent) : undefined;
+            const record = {
+                position_lat: lat, position_long: lng, altitude: ele,
+                timestamp: timeNode ? timeNode.textContent : undefined,
+                heart_rate: hrNode ? parseInt(hrNode.textContent, 10) : 0,
+                cadence: cadNode ? parseInt(cadence.textContent, 10) : 0,
+                power: pwrNode ? parseInt(pwrNode.textContent, 10) : 0,
+                temperature: 0, speed: 0
+            };
+
+            if (lastLat !== null && lastLng !== null) {
+                const R = 6371000;
+                const dLat = (lat - lastLat) * Math.PI / 180;
+                const dLon = (lng - lastLng) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                totalDist += R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+            }
+            if (ele !== undefined && lastEle !== null && ele > lastEle) totalAscent += (ele - lastEle);
+
+            lastLat = lat; lastLng = lng; if (ele !== undefined) lastEle = ele;
+            parsedRecords.push(record);
+        }
+
+        activitySummary = { total_distance: totalDist, total_moving_time: parsedRecords.length, total_ascent: totalAscent, total_calories: totalCalories };
+    };
+
+    const generateGpxOutput = (inputEncoding, outputEncoding, metrics, latLngs) => {
+        const startTime = parsedRecords[0]?.timestamp ? new Date(parsedRecords[0].timestamp).toISOString() : new Date().toISOString();
+        const totalCalories = activitySummary.total_calories || 0;
+
+        let gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="FitToGpxWeb" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">\n  <metadata>\n    <time>${startTime}</time>\n    <desc>Calories: ${totalCalories} kcal</desc>\n  </metadata>\n  <trk>\n    <name>Converted Track</name>\n    <trkseg>`;
+
+        parsedRecords.forEach((record) => {
+            if (!record.position_lat || !record.position_long) return;
+            const [wgsLng, wgsLat] = toWgs84(record.position_long, record.position_lat, inputEncoding);
+            latLngs.push([wgsLat, wgsLng]);
+            const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
+
+            gpx += `\n      <trkpt lat="${outLat.toFixed(6)}" lon="${outLng.toFixed(6)}">${record.altitude !== undefined ? `\n        <ele>${record.altitude.toFixed(1)}</ele>` : ''}${record.timestamp ? `\n        <time>${new Date(record.timestamp).toISOString()}</time>` : ''}\n        <extensions>\n          <power>${record.power || 0}</power>\n          <gpxtpx:TrackPointExtension>\n            <gpxtpx:hr>${record.heart_rate || 0}</gpxtpx:hr>\n            <gpxtpx:cad>${record.cadence || 0}</gpxtpx:cad>\n            <gpxtpx:atemp>${record.temperature || 0}</gpxtpx:atemp>\n            <gpxtpx:speed>${record.speed || 0}</gpxtpx:speed>\n          </gpxtpx:TrackPointExtension>\n        </extensions>\n      </trkpt>`;
+        });
+        gpx += `\n    </trkseg>\n  </trk>\n</gpx>`;
+        return new Blob([gpx], { type: 'application/gpx+xml;charset=utf-8;' });
+    };
+
+    const generateTcxOutput = (inputEncoding, outputEncoding, latLngs) => {
+        const startTime = parsedRecords[0]?.timestamp ? new Date(parsedRecords[0].timestamp).toISOString() : new Date().toISOString();
+        let tcx = `<?xml version="1.0" encoding="UTF-8"?>\n<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">\n  <Activities>\n    <Activity Sport="Biking">\n      <Id>${startTime}</Id>\n      <Lap StartTime="${startTime}">\n        <TotalTimeSeconds>${activitySummary.total_moving_time || parsedRecords.length}</TotalTimeSeconds>\n        <DistanceMeters>${activitySummary.total_distance || 0}</DistanceMeters>\n        <Calories>${activitySummary.total_calories || 0}</Calories>\n        <Track>`;
+
+        parsedRecords.forEach((record) => {
+            if (!record.position_lat || !record.position_long) return;
+            const [wgsLng, wgsLat] = toWgs84(record.position_long, record.position_lat, inputEncoding);
+            latLngs.push([wgsLat, wgsLng]);
+            const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
+
+            tcx += `\n          <Trackpoint>${record.timestamp ? `\n            <Time>${new Date(record.timestamp).toISOString()}</Time>` : ''}\n            <Position>\n              <LatitudeDegrees>${outLat.toFixed(6)}</LatitudeDegrees>\n              <LongitudeDegrees>${outLng.toFixed(6)}</LongitudeDegrees>\n            </Position>${record.altitude !== undefined ? `\n            <AltitudeMeters>${record.altitude.toFixed(1)}</AltitudeMeters>` : ''}\n            <HeartRateBpm>\n              <Value>${record.heart_rate || 0}</Value>\n            </HeartRateBpm>\n            <Cadence>${record.cadence || 0}</Cadence>\n            <Extensions>\n              <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">\n                <Watts>${record.power || 0}</Watts>\n              </TPX>\n            </Extensions>\n          </Trackpoint>`;
+        });
+        tcx += `\n        </Track>\n      </Lap>\n    </Activity>\n  </Activities>\n</TrainingCenterDatabase>`;
+        return new Blob([tcx], { type: 'application/vn.garmin.tcx+xml;charset=utf-8;' });
+    };
+
+    const generateFitOutput = (inputEncoding, outputEncoding, latLngs) => {
+        const encoder = new Encoder();
+        encoder.writeMesg({ mesgNum: Profile.MesgNum.FILE_ID, type: "activity", manufacturer: "development", product: 1, timeCreated: new Date() });
+
+        const { positionLat, positionLong, ...cleanSummary } = activitySummary;
+        encoder.writeMesg({
+            ...cleanSummary, mesgNum: Profile.MesgNum.SESSION,
+            totalDistance: activitySummary.total_distance || 0,
+            totalTimerTime: activitySummary.total_moving_time || parsedRecords.length,
+            totalMovingTime: activitySummary.total_moving_time || parsedRecords.length,
+            totalCalories: activitySummary.total_calories || 0
+        });
+        encoder.writeMesg({ mesgNum: Profile.MesgNum.ACTIVITY, totalTimerTime: activitySummary.total_moving_time || parsedRecords.length, numSessions: 1, type: "manual", event: "activity" });
+
+        let accumDist = 0, lastLat = null, lastLng = null;
+        parsedRecords.forEach((rec) => {
+            if (!rec.position_long || !rec.position_lat) return;
+            const [wgsLng, wgsLat] = toWgs84(rec.position_long, rec.position_lat, inputEncoding);
+            if (lastLat !== null && lastLng !== null) {
+                const R = 6371000;
+                const dLat = (wgsLat - lastLat) * Math.PI / 180;
+                const dLon = (wgsLng - lastLng) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lastLat * Math.PI / 180) * Math.cos(wgsLat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                accumDist += R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+            }
+            lastLat = wgsLat; lastLng = wgsLng;
+            latLngs.push([wgsLat, wgsLng]);
+
+            const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
+            const { positionLat: nLat, positionLong: nLng, ...cleanRec } = rec;
+            encoder.writeMesg({
+                ...cleanRec, mesgNum: Profile.MesgNum.RECORD,
+                positionLat: Math.round(outLat * (2147483648 / 180)),
+                positionLong: Math.round(outLng * (2147483648 / 180)),
+                altitude: rec.altitude, timestamp: rec.timestamp ? new Date(rec.timestamp) : new Date(),
+                heartRate: rec.heart_rate, cadence: rec.cadence, power: rec.power, temperature: rec.temperature, speed: rec.speed, distance: accumDist
+            });
+        });
+        return new Blob([encoder.close()], { type: 'application/octet-stream' });
+    };
+
+    const processAndRenderTrack = () => {
+        const inputEncoding = dom.inputEncoding.value;
+        const outputFormat = dom.outputFormat.value;
+        const outputEncoding = dom.outputEncoding.value;
+
+        if (parsedRecords[0]?.timestamp) {
+            const dateObj = new Date(parsedRecords[0].timestamp);
+            dom.activityDateSpan.innerText = `${dateObj.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} ${dateObj.toLocaleTimeString()}`;
+            dom.activityDateContainer.classList.remove('d-none');
+        }
+
+        const metrics = { speed: [], hr: [], cad: [], pwr: [], ele: [], temp: [] };
+        const latLngs = [];
+
+        parsedRecords.forEach((record) => {
+            metrics.speed.push((record.speed !== undefined && record.speed !== null ? record.speed : 0) * 3.6);
+            metrics.hr.push(record.heart_rate !== undefined && record.heart_rate !== null ? record.heart_rate : 0);
+            metrics.cad.push(record.cadence !== undefined && record.cadence !== null ? record.cadence : 0);
+            metrics.pwr.push(record.power !== undefined && record.power !== null ? record.power : 0);
+            metrics.ele.push(record.altitude !== undefined && record.altitude !== null ? record.altitude : 0);
+            metrics.temp.push(record.temperature !== undefined && record.temperature !== null ? record.temperature : 0);
+        });
+
+        if (outputFormat === 'FIT') outputBlobData = generateFitOutput(inputEncoding, outputEncoding, latLngs);
+        else if (outputFormat === 'TCX') outputBlobData = generateTcxOutput(inputEncoding, outputEncoding, latLngs);
+        else outputBlobData = generateGpxOutput(inputEncoding, outputEncoding, metrics, latLngs);
+
+        dom.statDistance.innerText = activitySummary.total_distance ? (activitySummary.total_distance / 1000).toFixed(2) + ' km' : '0.00 km';
+        if (activitySummary.total_moving_time) {
+            const s = Math.floor(activitySummary.total_moving_time % 60), m = Math.floor((activitySummary.total_moving_time / 60) % 60), h = Math.floor(activitySummary.total_moving_time / 3600);
+            dom.statMovingTime.innerText = `${h}h ${m}m ${s}s`;
+        }
+        dom.statElevation.innerText = activitySummary.total_ascent ? activitySummary.total_ascent.toFixed(0) + ' m' : '0 m';
+
+        const calcAvgMax = (arr, round = 0) => arr.length ? [(arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(round), Math.max(...arr).toFixed(round)] : ['0', '0'];
+        const [avgSpd, maxSpd] = calcAvgMax(metrics.speed, 1);
+        const [avgHr, maxHr] = calcAvgMax(metrics.hr, 0);
+        const [avgCad, maxCad] = calcAvgMax(metrics.cad, 0);
+        const [avgPwr, maxPwr] = calcAvgMax(metrics.pwr, 0);
+        const [avgTmp, maxTmp] = calcAvgMax(metrics.temp, 1);
+
+        dom.statSpeed.innerText = `${avgSpd} / ${maxSpd} km/h`;
+        dom.statHeartRate.innerText = `${avgHr} / ${maxHr} bpm`;
+        dom.statCadence.innerText = `${avgCad} / ${maxCad} rpm`;
+        dom.statPower.innerText = `${avgPwr} W / ${maxPwr} W`;
+        dom.statTemperature.innerText = metrics.temp.length ? `${avgTmp} / ${maxTmp} °C` : '-';
+        dom.statsGrid.classList.remove('d-none');
+
+        Object.keys(chartInstances).forEach((k) => { if (chartInstances[k]) chartInstances[k].destroy(); });
+        dom.chartsContainer.classList.remove('d-none');
+        chartInstances.speed = createTelemetryChart('speedChart', 'Speed', metrics.speed, '#0D6EFD', 'km/h');
+        chartInstances.heartRate = createTelemetryChart('heartRateChart', 'Heart Rate', metrics.hr, '#E83E8C', 'bpm');
+        chartInstances.cadence = createTelemetryChart('cadenceChart', 'Cadence', metrics.cad, '#198754', 'rpm');
+        chartInstances.power = createTelemetryChart('powerChart', 'Power', metrics.pwr, '#DC3545', 'W');
+        chartInstances.elevation = createTelemetryChart('elevationChart', 'Elevation', metrics.ele, '#6F42C1', 'm');
+        chartInstances.temperature = createTelemetryChart('temperatureChart', 'Temperature', metrics.temp, '#FD7E14', '°C');
+
+        map.eachLayer((l) => { if (l instanceof L.Polyline || l instanceof L.Marker) map.removeLayer(l); });
+        if (latLngs.length > 0) {
+            const polyline = L.polyline(latLngs, { color: '#0056B3', weight: 4 }).addTo(map);
+            map.fitBounds(polyline.getBounds());
+            L.marker(latLngs[0]).addTo(map).bindPopup('Start Point');
+            L.marker(latLngs[latLngs.length - 1]).addTo(map).bindPopup('End Point');
+            showStatus(`Successfully loaded ${parsedRecords.length} records!`, 'text-success');
+            dom.exportBtn.disabled = false;
+        } else {
+            showStatus('Parsed track data successfully, but found no valid coordinates.', 'text-warning');
+            dom.exportBtn.disabled = true;
+        }
+    };
+
+    const parseAndProcess = async () => {
+        const inputFormat = dom.inputFormat.value;
+        showStatus(`Parsing ${inputFormat} file...`, 'text-warning');
+        dom.statsGrid.classList.add('d-none'); dom.chartsContainer.classList.add('d-none'); dom.activityDateContainer.classList.add('d-none');
+
+        try {
+            if (inputFormat === 'FIT') {
+                if (!currentRawBuffer) return;
+                const stream = Stream.fromByteArray(new Uint8Array(currentRawBuffer));
+                const decoder = new Decoder(stream);
+                if (!decoder.isFIT()) throw new Error('Invalid file structure: Not a valid Garmin FIT target.');
+
+                parsedRecords = []; activitySummary = {};
+                const result = decoder.read();
+                const messages = result.messages;
+                const rawRecords = messages?.record || messages?.records || messages?.recordMesgs || [];
+
+                if (rawRecords.length > 0) {
+                    parsedRecords = rawRecords.map((rec) => ({
+                        position_lat: rec.positionLat ? rec.positionLat * (180 / 2147483648) : undefined,
+                        position_long: rec.positionLong ? rec.positionLong * (180 / 2147483648) : undefined,
+                        altitude: rec.enhancedAltitude !== undefined ? rec.enhancedAltitude : rec.altitude,
+                        timestamp: rec.timestamp ? new Date(rec.timestamp).toISOString() : undefined,
+                        heart_rate: rec.heartRate, cadence: rec.cadence, power: rec.power, temperature: rec.temperature,
+                        speed: rec.enhancedSpeed !== undefined ? rec.enhancedSpeed : rec.speed, ...rec
+                    }));
+                }
+                const sessions = messages?.session || messages?.sessions || messages?.sessionMesgs || [];
+                if (sessions[0]) {
+                    const fields = sessions[0];
+                    activitySummary = {
+                        total_distance: fields.totalDistance, total_moving_time: fields.totalMovingTime || fields.totalTimerTime,
+                        total_ascent: fields.totalAscent, total_calories: fields.totalCalories || fields.calories, ...fields
+                    };
+                }
+                if (parsedRecords.length === 0) throw new Error('No data track records found in this file.');
+            } else if (inputFormat === 'TCX') {
+                if (!currentRawText) return;
+                parseTcxToRecords(currentRawText);
+            } else {
+                if (!currentRawText) return;
+                parseGpxToRecords(currentRawText);
+            }
+            processAndRenderTrack();
+        } catch (err) {
+            showStatus(`Error: ${err.message}`, 'text-danger');
+            dom.exportBtn.disabled = true;
+        }
+    };
+
+    dom.fitFile.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const ext = file.name.split('.').pop().toUpperCase();
+        if (['FIT', 'TCX', 'GPX'].includes(ext)) dom.inputFormat.value = ext;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            currentRawBuffer = event.target.result;
+            currentRawText = new TextDecoder().decode(currentRawBuffer);
+            dom.refreshBtn.disabled = false;
+            parseAndProcess();
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    ['inputFormat', 'inputEncoding'].forEach(id => dom[id].addEventListener('change', () => { if (currentRawBuffer) parseAndProcess(); }));
+    ['outputFormat', 'outputEncoding'].forEach(id => dom[id].addEventListener('change', () => { if (currentRawBuffer) processAndRenderTrack(); }));
+    dom.refreshBtn.addEventListener('click', parseAndProcess);
+
+    dom.exportBtn.addEventListener('click', () => {
+        if (currentRawBuffer) processAndRenderTrack();
+        if (!outputBlobData) return;
+        const format = dom.outputFormat.value;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(outputBlobData);
+        link.download = `converted_activity.${format.toLowerCase()}`;
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    });
