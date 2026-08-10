@@ -33,6 +33,14 @@
 - `npm install @garmin/fitsdk@~21.208.0`
 - `npm install github-fork-ribbon-css@~0.2.3`
 
+## Release
+
+- update VERSION
+- update DESIGN.md
+- update CHANGELOG.md
+- `npm run build`
+- prepare for git flow release
+
 # DESIGN.md
 
 - update `DESIGN.md`

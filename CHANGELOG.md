@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[20260810.1.4\] - 2026-08-10
+
+### Fixed
+
+- **TCX Parser:** Refined speed extraction logic to correctly identify `<Speed>` tags within `Extensions/TPX` nodes, ensuring speed metrics are properly parsed and displayed in the UI upon TCX re-import.
+
+### Changed
+
+- **Version:** Synchronized version number to `20260810.1.4` across `VERSION`, `index.html`, `scss/base/_variables.scss`, `README.md`, and `DESIGN.md`.
+
 ## \[20260810.1.3\] - 2026-08-10
 
 ### Added

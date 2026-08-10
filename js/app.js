@@ -365,6 +365,7 @@ const parseTcxToRecords = (tcxText) => {
       tpxNode?.getElementsByTagName('Speed')[0] ||
       pt.getElementsByTagName('Speed')[0] ||
       tpxNode?.getElementsByTagName('gpxtpx:speed')[0];
+    console.log('Speed node:', speedNode ? speedNode.textContent : 'null');
     const pwrNode = tpxNode?.getElementsByTagName('Watts')[0];
     const tempNode = tpxNode?.getElementsByTagName('Temperature')[0];
 
@@ -459,7 +460,7 @@ const generateTcxOutput = (inputEncoding, outputEncoding, latLngs) => {
     latLngs.push([wgsLat, wgsLng]);
     const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
 
-    tcx += `\n          <Trackpoint>${record.timestamp ? `\n            <Time>${new Date(record.timestamp).toISOString()}</Time>` : ''}\n            <Position>\n              <LatitudeDegrees>${outLat.toFixed(6)}</LatitudeDegrees>\n              <LongitudeDegrees>${outLng.toFixed(6)}</LongitudeDegrees>\n            </Position>${record.altitude !== undefined ? `\n            <AltitudeMeters>${record.altitude.toFixed(1)}</AltitudeMeters>` : ''}\n            <HeartRateBpm>\n              <Value>${record.heart_rate || 0}</Value>\n            </HeartRateBpm>\n            <Cadence>${record.cadence || 0}</Cadence>\n            <Extensions>\n              <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">\n                <Watts>${record.power || 0}</Watts>\n                <Temperature>${record.temperature || 0}</Temperature>\n              </TPX>\n            </Extensions>\n          </Trackpoint>`;
+    tcx += `\n          <Trackpoint>${record.timestamp ? `\n            <Time>${new Date(record.timestamp).toISOString()}</Time>` : ''}\n            <Position>\n              <LatitudeDegrees>${outLat.toFixed(6)}</LatitudeDegrees>\n              <LongitudeDegrees>${outLng.toFixed(6)}</LongitudeDegrees>\n            </Position>${record.altitude !== undefined ? `\n            <AltitudeMeters>${record.altitude.toFixed(1)}</AltitudeMeters>` : ''}\n            <HeartRateBpm>\n              <Value>${record.heart_rate || 0}</Value>\n            </HeartRateBpm>\n            <Cadence>${record.cadence || 0}</Cadence>\n            <Extensions>\n              <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">\n                <Speed>${record.speed || 0}</Speed>\n                <Watts>${record.power || 0}</Watts>\n                <Temperature>${record.temperature || 0}</Temperature>\n              </TPX>\n            </Extensions>\n          </Trackpoint>`;
   });
   tcx +=
     '\n        </Track>\n      </Lap>\n    </Activity>\n  </Activities>\n</TrainingCenterDatabase>';
