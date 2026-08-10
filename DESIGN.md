@@ -1,6 +1,6 @@
 # DESIGN.md
 
-Version: 20260809.1.3
+Version: 20260810.1.3
 
 ## 1. Executive Summary & Design Vision
 
@@ -10,6 +10,7 @@ The FIT / TCX / GPX Converter & Map Viewer is a client-side web application enab
 
 - **Frontend:** HTML5, CSS (Bootstrap 5), JavaScript (ES Modules).
 - **Processing:** Client-side logic in `js/app.js` using native APIs.
+- **PWA:** Service worker (`sw.js`) and `manifest.json` for offline capabilities and home screen installation.
 - **Dependencies:**
   - `bootstrap`: UI framework.
   - `bootstrap-icons`: Icon library.
@@ -48,7 +49,7 @@ The FIT / TCX / GPX Converter & Map Viewer is a client-side web application enab
   - `base/`: Base styles (`_base.scss`, `_variables.scss`, `_variables-dark.scss`).
   - `components/`: Modular component styles.
   - `vendor/`: Third-party library overrides.
-- **Property Ordering:** Strict order enforced via `stylelint`.
+- **Property Ordering:** Strict order enforced via `stylelint` (Drupal 11 core configuration).
 
 ## 8. Custom Application Layout & Behavioral Rules
 
@@ -70,3 +71,4 @@ The FIT / TCX / GPX Converter & Map Viewer is a client-side web application enab
 - [x] Passes `prettier` (Formatting).
 - [x] WCAG 2.2 AA Audit completed.
 - [x] OWASP Top 10 Audit completed.
+- [x] PWA Installability Audit completed.
