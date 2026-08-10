@@ -316,7 +316,6 @@ const parseTcxToRecords = (tcxText) => {
   }
 
   parsedRecords = [];
-  let totalDist = 0;
   let totalAscent = 0;
   let totalCalories = 0;
   let lastLat = null;
@@ -327,6 +326,19 @@ const parseTcxToRecords = (tcxText) => {
   if (caloriesNode) {
     totalCalories = parseFloat(caloriesNode.textContent);
   }
+
+  const lapNode = xmlDoc.getElementsByTagName('Lap')[0];
+  const timeNodeLap = lapNode?.getElementsByTagName('TotalTimeSeconds')[0];
+  const distNodeLap = lapNode?.getElementsByTagName('DistanceMeters')[0];
+  const avgSpeedNode = lapNode?.getElementsByTagName('AverageSpeed')[0];
+  const maxSpeedNode = lapNode?.getElementsByTagName('MaximumSpeed')[0];
+
+  const totalMovingTime = timeNodeLap
+    ? parseFloat(timeNodeLap.textContent)
+    : trackpoints.length;
+  let totalDist = distNodeLap ? parseFloat(distNodeLap.textContent) : 0;
+  const avgSpeed = avgSpeedNode ? parseFloat(avgSpeedNode.textContent) : 0;
+  const maxSpeed = maxSpeedNode ? parseFloat(maxSpeedNode.textContent) : 0;
 
   for (let i = 0; i < trackpoints.length; i++) {
     const pt = trackpoints[i];
@@ -344,7 +356,13 @@ const parseTcxToRecords = (tcxText) => {
       .getElementsByTagName('HeartRateBpm')[0]
       ?.getElementsByTagName('Value')[0];
     const cadNode = pt.getElementsByTagName('Cadence')[0];
-    const pwrNode = pt.getElementsByTagName('Watts')[0];
+    const tpxNode = pt.getElementsByTagNameNS('*', 'TPX')[0];
+    const speedNode =
+      tpxNode?.getElementsByTagName('Speed')[0] ||
+      pt.getElementsByTagName('Speed')[0] ||
+      tpxNode?.getElementsByTagName('gpxtpx:speed')[0];
+    const pwrNode = tpxNode?.getElementsByTagName('Watts')[0];
+    const tempNode = tpxNode?.getElementsByTagName('Temperature')[0];
 
     const ele = eleNode ? parseFloat(eleNode.textContent) : undefined;
     const record = {
@@ -355,8 +373,8 @@ const parseTcxToRecords = (tcxText) => {
       heart_rate: hrNode ? parseInt(hrNode.textContent, 10) : 0,
       cadence: cadNode ? parseInt(cadNode.textContent, 10) : 0,
       power: pwrNode ? parseInt(pwrNode.textContent, 10) : 0,
-      temperature: 0,
-      speed: 0,
+      temperature: tempNode ? parseFloat(tempNode.textContent) : 0,
+      speed: speedNode ? parseFloat(speedNode.textContent) : 0,
     };
 
     if (lastLat !== null && lastLng !== null) {
@@ -385,9 +403,11 @@ const parseTcxToRecords = (tcxText) => {
 
   activitySummary = {
     total_distance: totalDist,
-    total_moving_time: parsedRecords.length,
+    total_moving_time: totalMovingTime,
     total_ascent: totalAscent,
     total_calories: totalCalories,
+    avg_speed: avgSpeed,
+    max_speed: maxSpeed,
   };
 };
 
@@ -421,7 +441,7 @@ const generateTcxOutput = (inputEncoding, outputEncoding, latLngs) => {
   const startTime = parsedRecords[0]?.timestamp
     ? new Date(parsedRecords[0].timestamp).toISOString()
     : new Date().toISOString();
-  let tcx = `<?xml version="1.0" encoding="UTF-8"?>\n<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">\n  <Activities>\n    <Activity Sport="Biking">\n      <Id>${startTime}</Id>\n      <Lap StartTime="${startTime}">\n        <TotalTimeSeconds>${activitySummary.total_moving_time || parsedRecords.length}</TotalTimeSeconds>\n        <DistanceMeters>${activitySummary.total_distance || 0}</DistanceMeters>\n        <Calories>${activitySummary.total_calories || 0}</Calories>\n        <Track>`;
+  let tcx = `<?xml version="1.0" encoding="UTF-8"?>\n<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">\n  <Activities>\n    <Activity Sport="Biking">\n      <Id>${startTime}</Id>\n      <Lap StartTime="${startTime}">\n        <TotalTimeSeconds>${activitySummary.total_moving_time || parsedRecords.length}</TotalTimeSeconds>\n        <DistanceMeters>${activitySummary.total_distance || 0}</DistanceMeters>\n        <Calories>${activitySummary.total_calories || 0}</Calories>\n        <AverageSpeed>${(activitySummary.total_distance / (activitySummary.total_moving_time || parsedRecords.length) || 0).toFixed(2)}</AverageSpeed>\n        <MaximumSpeed>${parsedRecords.reduce((max, r) => Math.max(max, r.speed || 0), 0).toFixed(2)}</MaximumSpeed>\n        <Track>`;
 
   parsedRecords.forEach((record) => {
     if (!record.position_lat || !record.position_long) {
@@ -435,7 +455,7 @@ const generateTcxOutput = (inputEncoding, outputEncoding, latLngs) => {
     latLngs.push([wgsLat, wgsLng]);
     const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
 
-    tcx += `\n          <Trackpoint>${record.timestamp ? `\n            <Time>${new Date(record.timestamp).toISOString()}</Time>` : ''}\n            <Position>\n              <LatitudeDegrees>${outLat.toFixed(6)}</LatitudeDegrees>\n              <LongitudeDegrees>${outLng.toFixed(6)}</LongitudeDegrees>\n            </Position>${record.altitude !== undefined ? `\n            <AltitudeMeters>${record.altitude.toFixed(1)}</AltitudeMeters>` : ''}\n            <HeartRateBpm>\n              <Value>${record.heart_rate || 0}</Value>\n            </HeartRateBpm>\n            <Cadence>${record.cadence || 0}</Cadence>\n            <Extensions>\n              <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">\n                <Watts>${record.power || 0}</Watts>\n              </TPX>\n            </Extensions>\n          </Trackpoint>`;
+    tcx += `\n          <Trackpoint>${record.timestamp ? `\n            <Time>${new Date(record.timestamp).toISOString()}</Time>` : ''}\n            <Position>\n              <LatitudeDegrees>${outLat.toFixed(6)}</LatitudeDegrees>\n              <LongitudeDegrees>${outLng.toFixed(6)}</LongitudeDegrees>\n            </Position>${record.altitude !== undefined ? `\n            <AltitudeMeters>${record.altitude.toFixed(1)}</AltitudeMeters>` : ''}\n            <HeartRateBpm>\n              <Value>${record.heart_rate || 0}</Value>\n            </HeartRateBpm>\n            <Cadence>${record.cadence || 0}</Cadence>\n            <Extensions>\n              <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">\n                <Watts>${record.power || 0}</Watts>\n                <Temperature>${record.temperature || 0}</Temperature>\n              </TPX>\n            </Extensions>\n          </Trackpoint>`;
   });
   tcx +=
     '\n        </Track>\n      </Lap>\n    </Activity>\n  </Activities>\n</TrainingCenterDatabase>';
@@ -455,6 +475,14 @@ const generateFitOutput = (inputEncoding, outputEncoding, latLngs) => {
   });
 
   const { ...cleanSummary } = activitySummary;
+  const avgTemp =
+    parsedRecords.reduce((sum, r) => sum + (r.temperature || 0), 0) /
+    (parsedRecords.length || 1);
+  const maxTemp = parsedRecords.reduce(
+    (max, r) => Math.max(max, r.temperature || 0),
+    0,
+  );
+
   encoder.writeMesg({
     ...cleanSummary,
     mesgNum: Profile.MesgNum.SESSION,
@@ -462,6 +490,12 @@ const generateFitOutput = (inputEncoding, outputEncoding, latLngs) => {
     totalTimerTime: activitySummary.total_moving_time || parsedRecords.length,
     totalMovingTime: activitySummary.total_moving_time || parsedRecords.length,
     totalCalories: activitySummary.total_calories || 0,
+    avgSpeed:
+      activitySummary.total_distance /
+        (activitySummary.total_moving_time || parsedRecords.length) || 0,
+    maxSpeed: parsedRecords.reduce((max, r) => Math.max(max, r.speed || 0), 0),
+    avgTemperature: avgTemp,
+    maxTemperature: maxTemp,
   });
   encoder.writeMesg({
     mesgNum: Profile.MesgNum.ACTIVITY,
@@ -595,7 +629,13 @@ const processAndRenderTrack = () => {
           Math.max(...arr).toFixed(round),
         ]
       : ['0', '0'];
-  const [avgSpd, maxSpd] = calcAvgMax(metrics.speed, 1);
+  const [avgSpd, maxSpd] =
+    activitySummary.avg_speed && activitySummary.max_speed
+      ? [
+          activitySummary.avg_speed.toFixed(1),
+          activitySummary.max_speed.toFixed(1),
+        ]
+      : calcAvgMax(metrics.speed, 1);
   const [avgHr, maxHr] = calcAvgMax(metrics.hr, 0);
   const [avgCad, maxCad] = calcAvgMax(metrics.cad, 0);
   const [avgPwr, maxPwr] = calcAvgMax(metrics.pwr, 0);
