@@ -9,7 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Accessibility Testing:** Integrated `axe-core/cli` to automatically perform WCAG 2.2 AA compliance audits on `index.html`.
 - **CI/CD Pipeline:** Refactored GitHub Actions workflow into granular `build`, `test`, and `deploy` jobs to improve observability, ensure testing runs on both `master` and `develop` branches, and restrict deployment to `master` only.
 - **Security Analysis:** Integrated ESLint security plugins (`eslint-plugin-security`, `eslint-plugin-no-unsanitized`) to enforce secure coding practices and detect common security vulnerabilities.
 
