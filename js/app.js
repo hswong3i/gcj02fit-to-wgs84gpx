@@ -27,6 +27,10 @@ const dom = {
   statTemperature: document.getElementById('statTemperature'),
 };
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
+
 let map;
 let parsedRecords = [];
 let activitySummary = {};
