@@ -31,7 +31,7 @@
     "build": "npm run pandoc && npm run eslint && npm run stylelint && npm run sass && npm run prettier",
     "eslint": "eslint --fix js/**/*.js",
     "http-server": "http-server . -p 8000",
-    "pandoc": "pandoc -f gfm -t gfm --wrap preserve -o DESIGN.md DESIGN.md",
+    "pandoc": "for i in *.md; do pandoc -f gfm -t gfm --wrap preserve -o $i $i; done",
     "prettier": "prettier --write *.html js/**/*.js scss/**/*.scss",
     "sass": "sass --no-source-map --style=expanded scss:css",
     "sass:watch": "sass --no-source-map --style=expanded --watch scss:css",

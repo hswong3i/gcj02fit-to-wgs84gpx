@@ -83,6 +83,11 @@
 - always convert preview file into output file as format and encoding selected
 - download converted output file to local in (.FIT / .TCX / .GPX) + (GCJ02 / BD09 / WGS84)
 
+## Progressive Web App
+
+- PWA
+  - allow bookmark to main screen as PWA on iOS and Android
+
 # Input
 
 ## Functional

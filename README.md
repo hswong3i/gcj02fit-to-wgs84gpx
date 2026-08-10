@@ -1,14 +1,21 @@
 # FIT / TCX / GPX Converter & Map Viewer
 
-Version: 20260809.1.2
+Version: 20260809.1.3
 
-Upload your **BROKEN** Magene C606 / C706 .FIT + GCJ02 file and re-export to standard .FIT + WGS84:
+[![GitHub Pages deploy](https://github.com/hswong3i/gcj02fit-to-wgs84gpx/actions/workflows/deploy.yml/badge.svg)](https://github.com/hswong3i/gcj02fit-to-wgs84gpx/actions/workflows/deploy.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![WCAG 2.2 AA Compliant](https://img.shields.io/badge/WCAG%202.2%20AA-Compliant-green)](https://www.w3.org/WAI/WCAG22/quickref/)
+[![OWASP Top 10 Compliant](https://img.shields.io/badge/OWASP%20Top%2010-Compliant-green)](https://owasp.org/www-project-top-ten/)
 
-- Support multi-directional file format convert between .FIT / .TCX / .GPX
-- Support multi-directional GPS encoding convert between GCJ02 / BD09 / WGS84
-- Support live preview before export file
+A client-side web application designed to convert and visualize activity data from `.FIT`, `.TCX`, and `.GPX` files, supporting various geospatial encodings.
 
-See <https://hswong3i.github.io/gcj02fit-to-wgs84gpx/>
+## Features
+
+- **Multi-directional File Conversion:** Convert between `.FIT`, `.TCX`, and `.GPX` formats.
+- **Geospatial Encoding Support:** Convert between GCJ02, BD09, and WGS84 GPS encodings.
+- **Live Preview:** Visualize telemetry data with an interactive map and line graphs before export.
+- **Progressive Web App (PWA):** Installable to home screens on iOS and Android for quick access and offline capabilities.
+- **Robust Standards Compliance:** Adheres to Drupal 11 JavaScript/CSS Coding Standards, WCAG 2.2 AA Accessibility, and OWASP Top 10 Security Guidelines.
 
 ## Why?
 
@@ -22,16 +29,40 @@ Well~ Don't Wait, Just Fix It!
 
 ## Running Locally
 
-Running a local test copy with:
+To set up and run a local copy of the application:
 
+1.  **Clone the repository:**
+
+    ``` bash
     git clone https://github.com/hswong3i/gcj02fit-to-wgs84gpx.git
     cd gcj02fit-to-wgs84gpx
+    ```
 
+2.  **Install dependencies:**
+
+    ``` bash
     npm install
-    npm run build
-    npm run http-server
+    ```
 
-Check with <http://0.0.0.0:8000/>
+3.  **Build the project (linting, formatting, compiling):**
+
+    ``` bash
+    npm run build
+    ```
+
+4.  **Start a local server:**
+
+    ``` bash
+    npm run http-server
+    ```
+
+    Access the application in your browser at <http://0.0.0.0:8000/>
+
+## Usage
+
+1.  **Upload Source File:** Select your `.FIT`, `.TCX`, or `.GPX` file and its original encoding.
+2.  **Preview Data:** View activity summary, map track, and telemetry charts.
+3.  **Convert & Export:** Choose your desired output format and encoding, then click "Export File" to download the converted data.
 
 ## Demo Layout
 
@@ -45,5 +76,5 @@ Check with <http://0.0.0.0:8000/>
 ## Author Information
 
 - Wong Hoi Sing Edison
-  - <https://twitter.com/hswong3i>
-  - <https://github.com/hswong3i>
+  - [Twitter](https://twitter.com/hswong3i)
+  - [GitHub](https://github.com/hswong3i)

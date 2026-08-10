@@ -1,0 +1,16 @@
+{
+  "name": "FIT / TCX / GPX Converter & Map Viewer",
+  "short_name": "FIT Converter",
+  "description": "Convert and view activity files (FIT, TCX, GPX).",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0d753a",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
