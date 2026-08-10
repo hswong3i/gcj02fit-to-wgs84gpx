@@ -1,4 +1,8 @@
 {
+  "allowScripts": {
+    "@parcel/watcher@2.6.0": true,
+    "chromedriver@151.0.5": true
+  },
   "dependencies": {
     "@garmin/fitsdk": "~21.208.0",
     "bootstrap": "~5.3.8",
@@ -38,14 +42,10 @@
     "http-server": "http-server . -p 8000",
     "pandoc": "for i in *.md; do pandoc -f gfm -t gfm --wrap preserve -o $i $i; done",
     "prettier": "prettier --write *.html js/**/*.js scss/**/*.scss",
-    "sass": "sass --no-source-map --style=expanded scss:css",
-    "sass:watch": "sass --no-source-map --style=expanded --watch scss:css",
+    "sass": "sass --no-source-map --style=expanded --silence-deprecation=import --silence-deprecation=if-function --silence-deprecation=global-builtin --silence-deprecation=color-functions scss:css",
+    "sass:watch": "sass --no-source-map --style=expanded --silence-deprecation=import --silence-deprecation=if-function --silence-deprecation=global-builtin --silence-deprecation=color-functions --watch scss:css",
     "stylelint": "stylelint --fix scss/**/*.scss"
   },
   "type": "module",
-  "version": "1.0.0",
-  "allowScripts": {
-    "chromedriver@151.0.5": true,
-    "@parcel/watcher@2.6.0": true
-  }
+  "version": "20260810.1.5"
 }

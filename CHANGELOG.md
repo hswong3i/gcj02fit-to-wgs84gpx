@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Version:** Synchronized version number to `20260810.1.5` across `VERSION`, `index.html`, `scss/base/_variables.scss`, `README.md`, and `DESIGN.md`.
+- **Build:** Silenced Sass deprecation warnings by adding `--silence-deprecation` flags to the `sass` script in `package.json`.
 
 ## \[20260810.1.4\] - 2026-08-10
 
