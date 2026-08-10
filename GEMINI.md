@@ -43,7 +43,6 @@
   - PATCH: when defects are corrected, e.g. 20260727.1.1
   - sync across all `*.css`, `*.js`, `*.html`, `*.md`
   - `find *.* */*.css */*.js -type f | xargs sed -i 's/20260727.1.1/20260727.1.2/g'`
-- lock primary branding green in `#0d753a`
 - include WCAG 2.2 AA Compliance guideline and recommendation
 - include OWASP Top 10 Compliance guideline and recommendation
 - include SSOT Compliance guideline and recommendation
@@ -58,6 +57,19 @@
   - for project manager
   - for junior developer
   - for junior designer
+
+## Sections
+
+1.  Executive Summary & Design Vision
+2.  Technical Stack & Environment Requirements
+3.  WCAG 2.2 AA Compliance Matrix
+4.  OWASP Top 10 Compliance Matrix
+5.  SSOT & Version Management
+6.  Multi-lingual Mapping & Information Architecture
+7.  CSS & Sass Style Guide
+8.  Custom Application Layout & Behavioral Rules
+9.  Component Guideline Integration & Synced Execution Matrix
+10. Quality Assurance & Auditing Checklist
 
 # Logic
 

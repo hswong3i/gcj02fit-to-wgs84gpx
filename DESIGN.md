@@ -1,43 +1,72 @@
 # DESIGN.md
 
-Version: 20260809.1.0
+Version: 20260809.1.1
 
-## Overview
+## 1. Executive Summary & Design Vision
 
-The FIT / TCX / GPX Converter & Map Viewer is a client-side web application that enables users to upload activity files (FIT, TCX, or GPX formats), view their telemetry data (such as speed, heart rate, cadence, power, elevation, and temperature) on an interactive map and line charts, and convert these files into different formats or encodings (GCJ02, BD09, WGS84).
+The FIT / TCX / GPX Converter & Map Viewer is a client-side web application enabling users to upload activity files (FIT, TCX, GPX), visualize telemetry data (Speed, Heart Rate, Cadence, Power, Elevation, Temperature), and convert files between formats and geospatial encodings (GCJ02, BD09, WGS84). The vision is to provide a portable, secure, and accessible tool for activity data processing.
 
-## Architecture
+## 2. Technical Stack & Environment Requirements
 
-- **Frontend:** Built with HTML, CSS (Bootstrap 5), and JavaScript.
+- **Frontend:** HTML5, CSS (Bootstrap 5), JavaScript (ES Modules).
+- **Processing:** Client-side logic in `js/app.js` using native APIs.
 - **Dependencies:**
-  - `Bootstrap 5`: For UI components and layout.
-  - `Leaflet`: For interactive map visualization.
-  - `Chart.js`: For displaying telemetry performance data.
-  - `@garmin/fitsdk`: For decoding and encoding FIT files.
-  - `github-fork-ribbon-css`: To display the "Fork me on GitHub" ribbon.
-- **Processing Logic:** Client-side processing using JavaScript modules.
+  - `bootstrap`: UI framework.
+  - `bootstrap-icons`: Icon library.
+  - `leaflet`: Map rendering.
+  - `chart.js`: Telemetry visualization.
+  - `@garmin/fitsdk`: FIT file processing.
+  - `github-fork-ribbon-css`: Branding.
+- **Environment:** Node.js environment required for build tools (npm scripts).
 
-## Features
+## 3. WCAG 2.2 AA Compliance Matrix
 
-- **File Upload:** Supports uploading `.fit`, `.tcx`, and `.gpx` files.
-- **Conversion:** Enables converting between different file formats and geospatial encodings (GCJ02, BD09, WGS84).
-- **Visualization:**
-  - **Dashboard:** Displays activity summary data like distance, moving time, elevation, and average/max metrics.
-  - **Map:** Visualizes the route on an OpenStreetMap map.
-  - **Line Graphs:** Telemetry performance charts for Speed, Heart Rate, Cadence, Power, Elevation, and Temperature.
-- **Export:** Allows downloading the converted activity files in the selected format and encoding.
+- **Contrast:** Maintained a contrast ratio of at least 4.5:1 for all text elements.
+- **Semantics:** Using semantic HTML elements (nav, main, section, etc.).
+- **ARIA:** ARIA labels utilized for interactive elements and containers.
 
-## Layout
+## 4. OWASP Top 10 Compliance Matrix
 
-The application consists of a single-page layout centered in a container. It includes:
+- **A03: Injection:** Handled by utilizing `textContent` and `innerText` for DOM manipulation, avoiding `innerHTML`.
+- **A06: Vulnerable Components:** Managed via dependency auditing (`npm audit`) and adhering to locked library versions in `package.json`.
 
-- A header section with application title.
-- A settings section for input and output configuration (Format and Encoding).
-- Action buttons for file upload, refresh, and export.
-- A dashboard grid for statistical display.
-- A map area.
-- A container for telemetry charts.
+## 5. SSOT & Version Management
 
-## Implementation Details
+- **Version:** Managed centrally in `VERSION` file.
+- **Synchronization:** Automated updates across `index.html`, `DESIGN.md`, `README.md`, and SCSS/JS variables.
 
-The application is implemented as a static HTML file (`index.html`) containing all necessary UI structure, styling, and JavaScript logic to handle file parsing, data conversion, and visualization using the specified libraries.
+## 6. Multi-lingual Mapping & Information Architecture
+
+- Currently supports English interface.
+- Architecture is designed to be easily extensible for localization if required in future releases.
+
+## 7. CSS & Sass Style Guide
+
+- **Bootstrap 5:** Customization via `scss/styles.scss` overriding Bootstrap variables.
+- **BEM Naming:** Components use Block-Element-Modifier naming conventions (`.block__element--modifier`).
+- **SMACSS Structure:**
+  - `base/`: Base styles (`_base.scss`, `_variables.scss`, `_variables-dark.scss`).
+  - `components/`: Modular component styles.
+  - `vendor/`: Third-party library overrides.
+- **Property Ordering:** Strict order enforced via `stylelint`.
+
+## 8. Custom Application Layout & Behavioral Rules
+
+- **Responsive:** Single-page layout using Bootstrap grid/utilities.
+- **Interaction:** Real-time client-side preview and conversion on user input change.
+
+## 9. Component Guideline Integration & Synced Execution Matrix
+
+| Component | Standard             | Enforcer             |
+|:----------|:---------------------|:---------------------|
+| JS        | Drupal JS Standards  | ESLint + Prettier    |
+| CSS/SCSS  | Drupal CSS Standards | Stylelint + Prettier |
+| HTML      | Semantic Markup      | Manual Audit         |
+
+## 10. Quality Assurance & Auditing Checklist
+
+- [x] Passes `eslint` (JS Standards).
+- [x] Passes `stylelint` (CSS/SCSS Standards).
+- [x] Passes `prettier` (Formatting).
+- [x] WCAG 2.2 AA Audit completed.
+- [x] OWASP Top 10 Audit completed.

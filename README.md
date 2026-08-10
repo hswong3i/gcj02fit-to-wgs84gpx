@@ -1,6 +1,6 @@
 # FIT / TCX / GPX Converter & Map Viewer
 
-Version: 20260809.1.0
+Version: 20260809.1.1
 
 Upload your **BROKEN** Magene C606 / C706 .FIT + GCJ02 file and re-export to standard .FIT + WGS84:
 
@@ -26,7 +26,10 @@ Running a local test copy with:
 
     git clone https://github.com/hswong3i/gcj02fit-to-wgs84gpx.git
     cd gcj02fit-to-wgs84gpx
-    python3 -m http.server
+
+    npm install
+    npm run build
+    npm run http-server
 
 Check with <http://0.0.0.0:8000/>
 
