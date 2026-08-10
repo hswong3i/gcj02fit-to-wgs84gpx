@@ -246,8 +246,7 @@ const parseGpxToRecords = (gpxText) => {
     }
   }
 
-  for (let i = 0; i < trkpts.length; i++) {
-    const pt = trkpts[i];
+  Array.from(trkpts).forEach((pt) => {
     const lat = parseFloat(pt.getAttribute('lat'));
     const lng = parseFloat(pt.getAttribute('lon'));
     const eleNode = pt.getElementsByTagName('ele')[0];
@@ -301,7 +300,7 @@ const parseGpxToRecords = (gpxText) => {
       lastEle = ele;
     }
     parsedRecords.push(record);
-  }
+  });
 
   activitySummary = {
     total_distance: totalDist,
@@ -344,12 +343,11 @@ const parseTcxToRecords = (tcxText) => {
   const avgSpeed = avgSpeedNode ? parseFloat(avgSpeedNode.textContent) : 0;
   const maxSpeed = maxSpeedNode ? parseFloat(maxSpeedNode.textContent) : 0;
 
-  for (let i = 0; i < trackpoints.length; i++) {
-    const pt = trackpoints[i];
+  Array.from(trackpoints).forEach((pt) => {
     const latNode = pt.getElementsByTagName('LatitudeDegrees')[0];
     const lngNode = pt.getElementsByTagName('LongitudeDegrees')[0];
     if (!latNode || !lngNode) {
-      continue;
+      return;
     }
 
     const lat = parseFloat(latNode.textContent);
@@ -365,7 +363,7 @@ const parseTcxToRecords = (tcxText) => {
       tpxNode?.getElementsByTagName('Speed')[0] ||
       pt.getElementsByTagName('Speed')[0] ||
       tpxNode?.getElementsByTagName('gpxtpx:speed')[0];
-    console.log('Speed node:', speedNode ? speedNode.textContent : 'null');
+
     const pwrNode = tpxNode?.getElementsByTagName('Watts')[0];
     const tempNode = tpxNode?.getElementsByTagName('Temperature')[0];
 
@@ -404,7 +402,7 @@ const parseTcxToRecords = (tcxText) => {
       lastEle = ele;
     }
     parsedRecords.push(record);
-  }
+  });
 
   activitySummary = {
     total_distance: totalDist,
@@ -655,9 +653,9 @@ const processAndRenderTrack = () => {
     : '-';
   dom.statsGrid.classList.remove('d-none');
 
-  Object.keys(chartInstances).forEach((k) => {
-    if (chartInstances[k]) {
-      chartInstances[k].destroy();
+  Object.values(chartInstances).forEach((chart) => {
+    if (chart) {
+      chart.destroy();
     }
   });
   dom.chartsContainer.classList.remove('d-none');
@@ -853,6 +851,7 @@ dom.fitFile.addEventListener('change', (e) => {
 });
 
 ['inputFormat', 'inputEncoding'].forEach((id) =>
+  // eslint-disable-next-line security/detect-object-injection
   dom[id].addEventListener('change', () => {
     if (currentRawBuffer) {
       parseAndProcess();
@@ -860,6 +859,7 @@ dom.fitFile.addEventListener('change', (e) => {
   }),
 );
 ['outputFormat', 'outputEncoding'].forEach((id) =>
+  // eslint-disable-next-line security/detect-object-injection
   dom[id].addEventListener('change', () => {
     if (currentRawBuffer) {
       processAndRenderTrack();

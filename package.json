@@ -1,4 +1,8 @@
 {
+  "allowScripts": {
+    "@parcel/watcher@2.6.0": true,
+    "chromedriver@151.0.5": true
+  },
   "dependencies": {
     "@garmin/fitsdk": "~21.208.0",
     "bootstrap": "~5.3.8",
@@ -15,7 +19,10 @@
     "eslint-plugin-import": "~2.32.0",
     "eslint-plugin-jsdoc": "~61.7.1",
     "eslint-plugin-no-jquery": "~3.1.1",
+    "eslint-plugin-no-unsanitized": "~4.0.0",
     "eslint-plugin-prettier": "~5.5.6",
+    "eslint-plugin-security": "~1.7.1",
+    "eslint-plugin-security-node": "~1.1.4",
     "eslint-plugin-yml": "~1.19.1",
     "http-server": "~14.1.1",
     "prettier": "~3.6.2",
@@ -33,10 +40,10 @@
     "http-server": "http-server . -p 8000",
     "pandoc": "for i in *.md; do pandoc -f gfm -t gfm --wrap preserve -o $i $i; done",
     "prettier": "prettier --write *.html js/**/*.js scss/**/*.scss",
-    "sass": "sass --no-source-map --style=expanded scss:css",
-    "sass:watch": "sass --no-source-map --style=expanded --watch scss:css",
+    "sass": "sass --no-source-map --style=expanded --silence-deprecation=import --silence-deprecation=if-function --silence-deprecation=global-builtin --silence-deprecation=color-functions scss:css",
+    "sass:watch": "sass --no-source-map --style=expanded --silence-deprecation=import --silence-deprecation=if-function --silence-deprecation=global-builtin --silence-deprecation=color-functions --watch scss:css",
     "stylelint": "stylelint --fix scss/**/*.scss"
   },
   "type": "module",
-  "version": "1.0.0"
+  "version": "20260810.1.5"
 }

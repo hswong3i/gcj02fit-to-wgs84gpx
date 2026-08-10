@@ -16,7 +16,9 @@
   },
   "plugins": [
     "jsdoc",
-    "import"
+    "import",
+    "security",
+    "no-unsanitized"
   ],
   "globals": {
     "L": true,
@@ -48,7 +50,11 @@
     "import/extensions": "off",
     "camelcase": "off",
     "no-loss-of-precision": "off",
-    "no-continue": "off"
+    "no-continue": "off",
+    "no-unsanitized/property": "error",
+    "no-unsanitized/method": "error",
+    "security/detect-object-injection": "warn",
+    "security/detect-non-literal-require": "error"
   },
   "settings": {
     "jsdoc": {
