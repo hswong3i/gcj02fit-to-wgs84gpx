@@ -1,6 +1,6 @@
 # FIT / TCX / GPX Converter & Map Viewer
 
-Version: 20260809.1.1
+Version: 20260809.1.2
 
 Upload your **BROKEN** Magene C606 / C706 .FIT + GCJ02 file and re-export to standard .FIT + WGS84:
 
