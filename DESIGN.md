@@ -1,5 +1,7 @@
 # DESIGN.md
 
+Version: 20260809.1.0
+
 ## Overview
 
 The FIT / TCX / GPX Converter & Map Viewer is a client-side web application that enables users to upload activity files (FIT, TCX, or GPX formats), view their telemetry data (such as speed, heart rate, cadence, power, elevation, and temperature) on an interactive map and line charts, and convert these files into different formats or encodings (GCJ02, BD09, WGS84).
