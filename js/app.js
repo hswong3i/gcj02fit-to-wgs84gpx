@@ -37,6 +37,7 @@ let activitySummary = {};
 let outputBlobData = null;
 let currentRawBuffer = null;
 let currentRawText = null;
+let currentFile = null;
 
 const chartInstances = {
   speed: null,
@@ -830,12 +831,12 @@ const parseAndProcess = async () => {
 };
 
 dom.fitFile.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) {
+  currentFile = e.target.files[0];
+  if (!currentFile) {
     return;
   }
 
-  const ext = file.name.split('.').pop().toUpperCase();
+  const ext = currentFile.name.split('.').pop().toUpperCase();
   if (['FIT', 'TCX', 'GPX'].includes(ext)) {
     dom.inputFormat.value = ext;
   }
@@ -847,7 +848,7 @@ dom.fitFile.addEventListener('change', (e) => {
     dom.refreshBtn.disabled = false;
     parseAndProcess();
   };
-  reader.readAsArrayBuffer(file);
+  reader.readAsArrayBuffer(currentFile);
 });
 
 ['inputFormat', 'inputEncoding'].forEach((id) =>
@@ -878,7 +879,19 @@ dom.exportBtn.addEventListener('click', () => {
   const format = dom.outputFormat.value;
   const link = document.createElement('a');
   link.href = URL.createObjectURL(outputBlobData);
-  link.download = `converted_activity.${format.toLowerCase()}`;
+
+  let fileName = 'converted_activity';
+  if (currentFile) {
+    const parts = currentFile.name.split('.');
+    if (parts.length > 1) {
+      parts.pop();
+      fileName = parts.join('.');
+    } else {
+      fileName = currentFile.name;
+    }
+  }
+
+  link.download = `${fileName}.${format.toLowerCase()}`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
