@@ -45,12 +45,12 @@
 
 - update `DESIGN.md`
   - `pandoc -f gfm -t gfm --wrap preserve -o DESIGN.md DESIGN.md`
-- with schema in semantic versioning, e.g. 20260810.1.5
+- with schema in semantic versioning, e.g. 20260915.1.6
   - MAJOR: today timestamp, e.g. 20260728
   - MINOR: changes only when the interface breaks, e.g. 20260728.1
-  - PATCH: when defects are corrected, e.g. 20260810.1.5
+  - PATCH: when defects are corrected, e.g. 20260915.1.6
   - sync across all `*.css`, `*.js`, `*.html`, `*.md`
-  - `find *.* */*.css */*.js -type f | xargs sed -i 's/20260810.1.5/20260727.1.2/g'`
+  - `find *.* */*.css */*.js -type f | xargs sed -i 's/20260915.1.6/20260727.1.2/g'`
 - include WCAG 2.2 AA Compliance guideline and recommendation
 - include OWASP Top 10 Compliance guideline and recommendation
 - include SSOT Compliance guideline and recommendation

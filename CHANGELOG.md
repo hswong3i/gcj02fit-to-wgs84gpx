@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## \[20260915.1.6\] - 2026-09-15
+
+### Added
+
+- **Offline Support:** Expanded Service Worker cache asset list to include essential vendor CSS files (`leaflet`, `bootstrap`, `bootstrap-icons`, `github-fork-ribbon-css`), ensuring a fully functional offline experience.
+
+### Fixed
+
+- **Export:** Fixed filename handling when exporting, ensuring the original name is kept and only the extension is updated.
+
+### Added
+
+- **Data Quality:** Implemented forward and backward fill for heart rate data gaps (where heart rate is 0) to ensure more accurate telemetry, affecting GPX, TCX, and FIT exports.
+
+### Changed
+
+- **Version:** Synchronized version number to `20260915.1.6` across `VERSION`, `index.html`, `scss/base/_variables.scss`, `README.md`, and `DESIGN.md`.
+
 ## \[20260810.1.5\] - 2026-08-10
 
 ### Added

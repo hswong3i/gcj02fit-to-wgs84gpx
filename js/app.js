@@ -192,6 +192,27 @@ const showStatus = (msg, type) => {
   dom.statusMessage.className = `fw-bold small ${type}`;
 };
 
+const fillHeartRateGaps = (records) => {
+  let lastValidHr = 0;
+  // Forward pass
+  for (let i = 0; i < records.length; i++) {
+    if (records[i].heart_rate > 0) {
+      lastValidHr = records[i].heart_rate;
+    } else if (lastValidHr > 0) {
+      records[i].heart_rate = lastValidHr;
+    }
+  }
+  // Backward pass
+  lastValidHr = 0;
+  for (let i = records.length - 1; i >= 0; i--) {
+    if (records[i].heart_rate > 0) {
+      lastValidHr = records[i].heart_rate;
+    } else if (lastValidHr > 0) {
+      records[i].heart_rate = lastValidHr;
+    }
+  }
+};
+
 const createTelemetryChart = (canvasId, label, data, color, unit) => {
   const ctx = document.getElementById(canvasId).getContext('2d');
   return new Chart(ctx, {
@@ -823,6 +844,7 @@ const parseAndProcess = async () => {
       }
       parseGpxToRecords(currentRawText);
     }
+    fillHeartRateGaps(parsedRecords);
     processAndRenderTrack();
   } catch (err) {
     showStatus(`Error: ${err.message}`, 'text-danger');
@@ -831,7 +853,7 @@ const parseAndProcess = async () => {
 };
 
 dom.fitFile.addEventListener('change', (e) => {
-  currentFile = e.target.files[0];
+  [currentFile] = e.target.files;
   if (!currentFile) {
     return;
   }
