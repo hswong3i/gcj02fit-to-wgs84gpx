@@ -45,5 +45,5 @@
     "stylelint": "stylelint --fix scss/**/*.scss"
   },
   "type": "module",
-  "version": "20260810.1.5"
+  "version": "20260915.1.6"
 }
