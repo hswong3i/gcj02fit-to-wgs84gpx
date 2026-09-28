@@ -978,22 +978,25 @@ dom.exportBtn.addEventListener('click', () => {
   if (!outputBlobData) {
     return;
   }
-  const format = dom.outputFormat.value;
+  const format = dom.outputFormat.value.toLowerCase();
+  const outputEncoding = dom.outputEncoding.value;
   const link = document.createElement('a');
   link.href = URL.createObjectURL(outputBlobData);
 
-  let fileName = 'converted_activity';
+  let baseName = 'converted_activity';
   if (currentFile) {
     const parts = currentFile.name.split('.');
     if (parts.length > 1) {
       parts.pop();
-      fileName = parts.join('.');
+      baseName = parts.join('.');
     } else {
-      fileName = currentFile.name;
+      baseName = currentFile.name;
     }
   }
 
-  link.download = `${fileName}.${format.toLowerCase()}`;
+  baseName = baseName.replace(/-(GCJ02|BD09|WGS84)$/i, '');
+
+  link.download = `${baseName}-${outputEncoding}.${format}`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

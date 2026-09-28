@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## \[20260928.1.7\] - 2026-09-28
 
+### Changed
+
+- **Export Filename:** Updated export filename format to `ORIGINAL-ENCODING.FORMAT` (e.g. `MAGENE_C706_2026-09-15_095822_259667-WGS84.gpx`).
+
 ### Fixed
 
 - **GPX / TCX Export:** Implemented altitude/elevation forward and backward gap filling (`fillAltitudeGaps`) to ensure all trackpoints (including early ones) have valid elevation values.
