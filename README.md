@@ -1,6 +1,6 @@
 # FIT / TCX / GPX Converter & Map Viewer
 
-Version: 20260915.1.6
+Version: 20260928.1.7
 
 [![GitHub Pages deploy](https://github.com/hswong3i/gcj02fit-to-wgs84gpx/actions/workflows/deploy.yml/badge.svg)](https://github.com/hswong3i/gcj02fit-to-wgs84gpx/actions/workflows/deploy.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)

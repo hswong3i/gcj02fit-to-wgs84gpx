@@ -213,6 +213,52 @@ const fillHeartRateGaps = (records) => {
   }
 };
 
+const fillAltitudeGaps = (records) => {
+  let firstValidEle = 0;
+  for (let i = 0; i < records.length; i++) {
+    if (
+      records[i].altitude !== undefined &&
+      records[i].altitude !== null &&
+      !Number.isNaN(records[i].altitude)
+    ) {
+      firstValidEle = records[i].altitude;
+      break;
+    }
+  }
+
+  let lastValidEle = firstValidEle;
+  // Forward pass
+  for (let i = 0; i < records.length; i++) {
+    if (
+      records[i].altitude !== undefined &&
+      records[i].altitude !== null &&
+      !Number.isNaN(records[i].altitude)
+    ) {
+      lastValidEle = records[i].altitude;
+    } else {
+      records[i].altitude = lastValidEle;
+    }
+  }
+  // Backward pass
+  lastValidEle =
+    records[records.length - 1]?.altitude !== undefined &&
+    records[records.length - 1]?.altitude !== null &&
+    !Number.isNaN(records[records.length - 1]?.altitude)
+      ? records[records.length - 1].altitude
+      : firstValidEle;
+  for (let i = records.length - 1; i >= 0; i--) {
+    if (
+      records[i].altitude !== undefined &&
+      records[i].altitude !== null &&
+      !Number.isNaN(records[i].altitude)
+    ) {
+      lastValidEle = records[i].altitude;
+    } else {
+      records[i].altitude = lastValidEle;
+    }
+  }
+};
+
 const createTelemetryChart = (canvasId, label, data, color, unit) => {
   const ctx = document.getElementById(canvasId).getContext('2d');
   return new Chart(ctx, {
@@ -442,7 +488,10 @@ const generateGpxOutput = (inputEncoding, outputEncoding, metrics, latLngs) => {
     : new Date().toISOString();
   const totalCalories = activitySummary.total_calories || 0;
 
-  let gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="FitToGpxWeb" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">\n  <metadata>\n    <time>${startTime}</time>\n    <desc>Calories: ${totalCalories} kcal</desc>\n  </metadata>\n  <trk>\n    <name>Converted Track</name>\n    <trkseg>`;
+  const parts = [];
+  parts.push(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="FitToGpxWeb" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">\n  <metadata>\n    <time>${startTime}</time>\n    <desc>Calories: ${totalCalories} kcal</desc>\n  </metadata>\n  <trk>\n    <name>Converted Track</name>\n    <trkseg>`,
+  );
 
   parsedRecords.forEach((record) => {
     if (!record.position_lat || !record.position_long) {
@@ -456,17 +505,34 @@ const generateGpxOutput = (inputEncoding, outputEncoding, metrics, latLngs) => {
     latLngs.push([wgsLat, wgsLng]);
     const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
 
-    gpx += `\n      <trkpt lat="${outLat.toFixed(6)}" lon="${outLng.toFixed(6)}">${record.altitude !== undefined ? `\n        <ele>${record.altitude.toFixed(1)}</ele>` : ''}${record.timestamp ? `\n        <time>${new Date(record.timestamp).toISOString()}</time>` : ''}\n        <extensions>\n          <power>${record.power || 0}</power>\n          <gpxtpx:TrackPointExtension>\n            <gpxtpx:hr>${record.heart_rate || 0}</gpxtpx:hr>\n            <gpxtpx:cad>${record.cadence || 0}</gpxtpx:cad>\n            <gpxtpx:atemp>${record.temperature || 0}</gpxtpx:atemp>\n            <gpxtpx:speed>${record.speed || 0}</gpxtpx:speed>\n          </gpxtpx:TrackPointExtension>\n        </extensions>\n      </trkpt>`;
+    const eleVal =
+      record.altitude !== undefined &&
+      record.altitude !== null &&
+      !Number.isNaN(record.altitude)
+        ? record.altitude.toFixed(1)
+        : '0.0';
+    const timeStr = record.timestamp
+      ? `\n        <time>${new Date(record.timestamp).toISOString()}</time>`
+      : '';
+
+    parts.push(
+      `\n      <trkpt lat="${outLat.toFixed(6)}" lon="${outLng.toFixed(6)}">\n        <ele>${eleVal}</ele>${timeStr}\n        <extensions>\n          <power>${record.power || 0}</power>\n          <gpxtpx:TrackPointExtension>\n            <gpxtpx:hr>${record.heart_rate || 0}</gpxtpx:hr>\n            <gpxtpx:cad>${record.cadence || 0}</gpxtpx:cad>\n            <gpxtpx:atemp>${record.temperature || 0}</gpxtpx:atemp>\n            <gpxtpx:speed>${record.speed || 0}</gpxtpx:speed>\n          </gpxtpx:TrackPointExtension>\n        </extensions>\n      </trkpt>`,
+    );
   });
-  gpx += '\n    </trkseg>\n  </trk>\n</gpx>';
-  return new Blob([gpx], { type: 'application/gpx+xml;charset=utf-8;' });
+  parts.push('\n    </trkseg>\n  </trk>\n</gpx>');
+  return new Blob([parts.join('')], {
+    type: 'application/gpx+xml;charset=utf-8;',
+  });
 };
 
 const generateTcxOutput = (inputEncoding, outputEncoding, latLngs) => {
   const startTime = parsedRecords[0]?.timestamp
     ? new Date(parsedRecords[0].timestamp).toISOString()
     : new Date().toISOString();
-  let tcx = `<?xml version="1.0" encoding="UTF-8"?>\n<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">\n  <Activities>\n    <Activity Sport="Biking">\n      <Id>${startTime}</Id>\n      <Lap StartTime="${startTime}">\n        <TotalTimeSeconds>${activitySummary.total_moving_time || parsedRecords.length}</TotalTimeSeconds>\n        <DistanceMeters>${activitySummary.total_distance || 0}</DistanceMeters>\n        <Calories>${activitySummary.total_calories || 0}</Calories>\n        <AverageSpeed>${(activitySummary.total_distance / (activitySummary.total_moving_time || parsedRecords.length) || 0).toFixed(2)}</AverageSpeed>\n        <MaximumSpeed>${parsedRecords.reduce((max, r) => Math.max(max, r.speed || 0), 0).toFixed(2)}</MaximumSpeed>\n        <Track>`;
+  const parts = [];
+  parts.push(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">\n  <Activities>\n    <Activity Sport="Biking">\n      <Id>${startTime}</Id>\n      <Lap StartTime="${startTime}">\n        <TotalTimeSeconds>${activitySummary.total_moving_time || parsedRecords.length}</TotalTimeSeconds>\n        <DistanceMeters>${activitySummary.total_distance || 0}</DistanceMeters>\n        <Calories>${activitySummary.total_calories || 0}</Calories>\n        <AverageSpeed>${(activitySummary.total_distance / (activitySummary.total_moving_time || parsedRecords.length) || 0).toFixed(2)}</AverageSpeed>\n        <MaximumSpeed>${parsedRecords.reduce((max, r) => Math.max(max, r.speed || 0), 0).toFixed(2)}</MaximumSpeed>\n        <Track>`,
+  );
 
   parsedRecords.forEach((record) => {
     if (!record.position_lat || !record.position_long) {
@@ -480,11 +546,24 @@ const generateTcxOutput = (inputEncoding, outputEncoding, latLngs) => {
     latLngs.push([wgsLat, wgsLng]);
     const [outLng, outLat] = fromWgs84(wgsLng, wgsLat, outputEncoding);
 
-    tcx += `\n          <Trackpoint>${record.timestamp ? `\n            <Time>${new Date(record.timestamp).toISOString()}</Time>` : ''}\n            <Position>\n              <LatitudeDegrees>${outLat.toFixed(6)}</LatitudeDegrees>\n              <LongitudeDegrees>${outLng.toFixed(6)}</LongitudeDegrees>\n            </Position>${record.altitude !== undefined ? `\n            <AltitudeMeters>${record.altitude.toFixed(1)}</AltitudeMeters>` : ''}\n            <HeartRateBpm>\n              <Value>${record.heart_rate || 0}</Value>\n            </HeartRateBpm>\n            <Cadence>${record.cadence || 0}</Cadence>\n            <Extensions>\n              <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">\n                <Speed>${record.speed || 0}</Speed>\n                <Watts>${record.power || 0}</Watts>\n                <Temperature>${record.temperature || 0}</Temperature>\n              </TPX>\n            </Extensions>\n          </Trackpoint>`;
+    const eleVal =
+      record.altitude !== undefined &&
+      record.altitude !== null &&
+      !Number.isNaN(record.altitude)
+        ? record.altitude.toFixed(1)
+        : '0.0';
+    const timeStr = record.timestamp
+      ? `\n            <Time>${new Date(record.timestamp).toISOString()}</Time>`
+      : '';
+
+    parts.push(
+      `\n          <Trackpoint>${timeStr}\n            <Position>\n              <LatitudeDegrees>${outLat.toFixed(6)}</LatitudeDegrees>\n              <LongitudeDegrees>${outLng.toFixed(6)}</LongitudeDegrees>\n            </Position>\n            <AltitudeMeters>${eleVal}</AltitudeMeters>\n            <HeartRateBpm>\n              <Value>${record.heart_rate || 0}</Value>\n            </HeartRateBpm>\n            <Cadence>${record.cadence || 0}</Cadence>\n            <Extensions>\n              <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">\n                <Speed>${record.speed || 0}</Speed>\n                <Watts>${record.power || 0}</Watts>\n                <Temperature>${record.temperature || 0}</Temperature>\n              </TPX>\n            </Extensions>\n          </Trackpoint>`,
+    );
   });
-  tcx +=
-    '\n        </Track>\n      </Lap>\n    </Activity>\n  </Activities>\n</TrainingCenterDatabase>';
-  return new Blob([tcx], {
+  parts.push(
+    '\n        </Track>\n      </Lap>\n    </Activity>\n  </Activities>\n</TrainingCenterDatabase>',
+  );
+  return new Blob([parts.join('')], {
     type: 'application/vn.garmin.tcx+xml;charset=utf-8;',
   });
 };
@@ -845,6 +924,7 @@ const parseAndProcess = async () => {
       parseGpxToRecords(currentRawText);
     }
     fillHeartRateGaps(parsedRecords);
+    fillAltitudeGaps(parsedRecords);
     processAndRenderTrack();
   } catch (err) {
     showStatus(`Error: ${err.message}`, 'text-danger');
