@@ -192,27 +192,6 @@ const showStatus = (msg, type) => {
   dom.statusMessage.className = `fw-bold small ${type}`;
 };
 
-const fillHeartRateGaps = (records) => {
-  let lastValidHr = 0;
-  // Forward pass
-  for (let i = 0; i < records.length; i++) {
-    if (records[i].heart_rate > 0) {
-      lastValidHr = records[i].heart_rate;
-    } else if (lastValidHr > 0) {
-      records[i].heart_rate = lastValidHr;
-    }
-  }
-  // Backward pass
-  lastValidHr = 0;
-  for (let i = records.length - 1; i >= 0; i--) {
-    if (records[i].heart_rate > 0) {
-      lastValidHr = records[i].heart_rate;
-    } else if (lastValidHr > 0) {
-      records[i].heart_rate = lastValidHr;
-    }
-  }
-};
-
 const fillAltitudeGaps = (records) => {
   let firstValidEle = 0;
   for (let i = 0; i < records.length; i++) {
@@ -923,7 +902,6 @@ const parseAndProcess = async () => {
       }
       parseGpxToRecords(currentRawText);
     }
-    fillHeartRateGaps(parsedRecords);
     fillAltitudeGaps(parsedRecords);
     processAndRenderTrack();
   } catch (err) {

@@ -1,6 +1,6 @@
 # DESIGN.md
 
-Version: 20260928.1.7
+Version: 20261004.1.8
 
 ## 1. Executive Summary & Design Vision
 
