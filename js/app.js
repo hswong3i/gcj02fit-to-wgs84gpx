@@ -921,6 +921,13 @@ dom.fitFile.addEventListener('change', (e) => {
     dom.inputFormat.value = ext;
   }
 
+  const encMatch = currentFile.name.match(/(GCJ02|BD09|WGS84)/i);
+  if (encMatch) {
+    dom.inputEncoding.value = encMatch[1].toUpperCase();
+  } else {
+    dom.inputEncoding.value = 'GCJ02';
+  }
+
   const reader = new FileReader();
   reader.onload = (event) => {
     currentRawBuffer = event.target.result;
