@@ -5,7 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## \[20261004.1.8\] - 2026-10-04
+## \[20261004.1.9\] - 2026-10-04
+
+### Added
+
+- **File Upload:** Implemented auto-detection of upload file format and encoding from filename (e.g. `MAGENE_C606_2026-10-04_071934_259667-WGS84.fit` -\> FIT + WGS84, `MAGENE_C606_2026-10-04_071934_259667-GCJ02.gpx` -\> GPX + GCJ02), defaulting encoding to GCJ02 if not detected.
 
 ### Fixed
 
@@ -13,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Version:** Synchronized version number to `20261004.1.8` across `VERSION`, `index.html`, `scss/base/_variables.scss`, `README.md`, and `DESIGN.md`.
+- **Version:** Synchronized version number to `20261004.1.9` across `VERSION`, `index.html`, `scss/base/_variables.scss`, `README.md`, and `DESIGN.md`.
 
 ## \[20260928.1.7\] - 2026-09-28
 
